@@ -7,6 +7,12 @@
   <meta name="description" content='RSS Reader，一个将订阅信息聚合展示的开源web工具，便于了解近期关注的信息，同时页面数据数据也实现了自动刷新。'>
   <meta name="keywords" content="<< .Keywords >>">
   <meta name="anthor" content="srcrs">
+  <meta name="theme-color" content="#409EFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RSS Reader">
+  <link rel="apple-touch-icon" href="static/icon-192.svg">
+  <link rel="manifest" href="static/manifest.json">
   <!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
   <link rel="stylesheet" href="static/index.min.css">
   << if .DarkMode >>
@@ -497,6 +503,20 @@
         console.error('Failed to handle read items:', e);
       }
     })();
+  </script>
+  <script>
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js')
+          .then(registration => {
+            console.log('SW registered: ', registration);
+          })
+          .catch(error => {
+            console.log('SW registration failed: ', error);
+          });
+      });
+    }
   </script>
 </body>
 </html>
