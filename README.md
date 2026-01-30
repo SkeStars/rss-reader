@@ -60,6 +60,37 @@ autoUpdatePush | 自动刷新间隔，默认为0，不开启。效果为前端�
 nightStartTime | 日间开始时间 ，如 06:30:00
 nightEndTime | 日间结束时间，如 19:30:00
 
+## 榜单模式
+
+对于榜单类型的RSS源（如热榜、排行榜等），这类源通常没有发布时间，条目会根据排名变化。启用榜单模式后，每次更新源时会智能识别新增条目，并将其放在列表前面，方便用户发现新上榜内容。
+
+配置方式：在源配置中添加 `rankingMode: true`
+
+```json
+{
+    "sources": [
+        {
+            "url": "https://example.com/ranking.rss",
+            "name": "热榜",
+            "rankingMode": true
+        },
+        {
+            "name": "聚合榜单",
+            "urls": [
+                {"url": "https://example.com/hot.rss", "name": "热点榜", "rankingMode": true},
+                {"url": "https://example.com/new.rss", "name": "新闻榜", "rankingMode": true}
+            ]
+        }
+    ]
+}
+```
+
+榜单模式特性：
+- **新增条目自动置顶**：每次刷新时，新出现在榜单上的条目会显示在列表最前面
+- **智能缓存清理**：已从榜单移除的条目，其相关缓存（包括AI过滤缓存）会自动清理
+- **时间戳处理**：新增条目会使用更新时的当前时间作为 pubDate，在文件夹聚合时按更新时间排序
+- **适用场景**：适合热榜、排行榜、趋势榜等动态变化的RSS源
+
 # 使用方式
 
 ## Docker部署

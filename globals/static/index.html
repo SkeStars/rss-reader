@@ -27,8 +27,21 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 18px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: normal;
+      padding: 10px 5px 5px 5px !important;
+    }
+
+    .card-header-icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      border-radius: 4px;
+      background-color: transparent;
+    }
+
+    .card-header-title {
+      font-weight: 500;
     }
 
     .list-item {
@@ -40,13 +53,54 @@
 
     .list-item-title {
       display: flex;
-      /* white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis; */
-      flex-grow: 1;
+      align-items: flex-start;
       text-align: left;
       width: 100%;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
+      line-height: 1.6;
+    }
+
+    .item-number {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      margin-right: 8px;
+      margin-top: 1px;
+      padding-top: 2px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #e8e8e8;
+      border-radius: 6px;
+      color: #666;
+      line-height: 1;
+      box-sizing: border-box;
+    }
+
+    << if .DarkMode >>
+    .item-number {
+      background-color: #3a3a3a;
+      color: #999;
+    }
+    << end >>
+
+    .item-content {
+      flex: 1;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .item-content a,
+    .item-content .el-link,
+    .item-content .el-link__inner {
+      display: inline !important;
+    }
+
+    .item-content .source-tag {
+      display: inline;
+      white-space: nowrap;
     }
 
     a {
@@ -61,10 +115,61 @@
       margin-bottom: 20px;
     }
 
+    .box-card {
+      border-radius: 12px;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: 1px solid #e8e8e8;
+    }
+
+    .el-card__header {
+      padding: 25px 0px 10px 0px !important;
+    }
+
+    .el-card__body {
+      padding: 0px 15px 0px 5px !important;
+    }
+
+    << if .DarkMode >>
+    .box-card {
+      border-color: #3a3a3a;
+    }
+    << end >>
+
     .time {
       font-size: 12px;
       color: #999;
     }
+
+    .source-tag {
+      font-size: 12px;
+      color: #909399;
+      display: inline;
+      vertical-align: middle;
+      margin-left: 0.3em;
+    }
+
+    .footer-countdown {
+      font-size: 10px;
+      color: #999;
+      margin-left: 10px;
+    }
+
+    .item-read {
+      opacity: 0.5;
+    }
+
+    .item-read a,
+    .item-read .el-link {
+      color: #999 !important;
+    }
+
+    << if .DarkMode >>
+    .item-read a,
+    .item-read .el-link {
+      color: #666 !important;
+    }
+    << end >>
   </style>
 </head>
 
@@ -72,20 +177,16 @@
   <div id="app">
     <el-container>
       <el-header>
-        <h1>
-          RSS Reader
-          << if gt .AutoUpdatePush 0 >>
-            <span v-show="isPc"><br/>{{ countdown }} s</span>
-          << end >>
-        </h1>
+        <h1>RSS Reader</h1>
       </el-header>
       <el-main v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="拼命加载中">
         <el-row :gutter="20">
           << range $index, $feed :=.RssDataList >>
             <el-col v-if="showSEOFlag" :xs="24" :sm="12" :md="8" :lg="6" :key="index" class="feed-col">
-              <el-card class="box-card">
+              <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}" :header-style="{padding: '24px 20px 16px 20px'}">
                 <div slot="header" class="card-header">
-                  <span>
+                  <img class="card-header-icon" src="<< if $feed.Icon >><< $feed.Icon >><<else>>static/favicon.svg<<end>>" alt="icon" onerror="this.src='static/favicon.svg'" />
+                  <span class="card-header-title">
                     << $feed.Title >>
                   </span>
                 </div>
@@ -93,20 +194,16 @@
                   << range $i, $item :=$feed.Items >>
                     <el-list key="<< $i >>">
                       <el-list-item>
-                        <div class="list-item-title">
-                          <span>
-                            << inc $i >>.
-                          </span>
-                          <el-link href="<< $item.Link >>" target="_blank" title="<< $item.Title >>">
-                            << $item.Title >>
-                          </el-link>
+                        <div class="list-item-title seo-item" data-link="<< $item.Link >>">
+                          <span class="item-number"><< inc $i >></span>
+                          <span class="item-content"><el-link href="<< $item.Link >>" target="_blank" title="<< $item.Title >>"><< $item.Title >></el-link><<if $item.Source>> <span class="source-tag">[<< $item.Source >>]</span><<end>></span>
                         </div>
                       </el-list-item>
                     </el-list>
                     << end >>
                 </el-scrollbar>
-                <div slot="footer" class="card-footer" style="height: 10px;">
-                  <time class="time">
+                <div slot="footer" class="card-footer" style="padding: 0px 20px 0px 20px;">
+                  <time class="time" data-time="<< $feed.Custom.lastupdate >>">
                     << $feed.Custom.lastupdate >>
                   </time>
                 </div>
@@ -114,22 +211,25 @@
             </el-col>
             << end>>
               <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="(feed, index) in feeds" :key="index" class="feed-col">
-                <el-card class="box-card">
+                <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}" :header-style="{padding: '24px 20px 16px 20px'}">
                   <div slot="header" class="card-header">
-                    <span>{{ feed.title }}</span>
+                    <img class="card-header-icon" :src="feed.icon || 'static/favicon.svg'" :alt="feed.title" />
+                    <span class="card-header-title">{{ feed.title }}</span>
                   </div>
                   <el-scrollbar style="height: 300px;">
                     <el-list v-for="(item, i) in feed.items" :key="i">
                       <el-list-item>
-                        <div class="list-item-title">
-                          <span>{{ i+1 }}. </span>
-                          <el-link :href="item.link" target="_blank" :title="item.title">{{ item.title }}</el-link>
+                        <div class="list-item-title" :class="{ 'item-read': isRead(item.link) }" @click="markAsRead(item.link)">
+                          <span class="item-number">{{ i+1 }}</span>
+                          <span class="item-content">
+                            <el-link :href="item.link" target="_blank" :title="item.title">{{ item.title }}</el-link><span v-if="item.source && feed.isFolder" class="source-tag"> [{{ item.source }}]</span>
+                          </span>
                         </div>
                       </el-list-item>
                     </el-list>
                   </el-scrollbar>
-                  <div slot="footer" class="card-footer" style="height: 10px;">
-                    <time class="time">{{ feed.custom.lastupdate }}</time>
+                  <div slot="footer" class="card-footer" style="padding: 0px 20px 2px 20px;">
+                    <time class="time">{{ timeAgo(feed.custom.lastupdate) }}</time>
                   </div>
                 </el-card>
               </el-col>
@@ -137,8 +237,9 @@
       </el-main>
       <el-footer>
         <el-link href="https://github.com/srcrs/rss-reader" target="_blank">Rss-reader</el-link>
-        <span> | </span>
-        <el-link href="https://github.com/srcrs" target="_blank">By srcrs</el-link>
+        << if gt .AutoUpdatePush 0 >>
+          <span class="footer-countdown">| 下次更新: {{ nextUpdateTime }}</span>
+        << end >>
       </el-footer>
     </el-container>
   </div>
@@ -155,15 +256,114 @@
           feeds: [],
           showSEOFlag: true,
           fullscreenLoading: true,
-          countdown: 60,
+          countdown: << .AutoUpdatePush >> * 60,
           isPc: true,
           autoUpdatePush: << .AutoUpdatePush >>,
+          nextUpdateTime: '',
+          readItems: new Set(),
         };
+      },
+      methods: {
+        timeAgo(dateStr) {
+          if (!dateStr) return '';
+          const date = new Date(dateStr.replace(/-/g, '/'));
+          const now = new Date();
+          const diff = Math.floor((now - date) / 1000);
+          
+          if (diff < 60) return '刚刚';
+          if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+          if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+          if (diff < 2592000) return Math.floor(diff / 86400) + ' 天前';
+          return dateStr;
+        },
+        updateCountdown() {
+          if (this.autoUpdatePush === 0) return;
+          
+          const minutes = Math.floor(this.countdown / 60);
+          
+          if (minutes > 60) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            this.nextUpdateTime = `${hours}小时${mins}分钟后`;
+          } else if (minutes > 0) {
+            this.nextUpdateTime = `${minutes}分钟后`;
+          } else {
+            this.nextUpdateTime = `不到1分钟`;
+          }
+        },
+        isRead(link) {
+          return this.readItems.has(link);
+        },
+        markAsRead(link) {
+          if (this.readItems.has(link)) return;
+          this.readItems.add(link);
+          this.saveReadItems();
+          // 同步到后端
+          this.syncReadToServer(link);
+        },
+        async syncReadToServer(link) {
+          try {
+            await fetch('/api/mark-read', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ link: link })
+            });
+          } catch (e) {
+            console.error('Failed to sync read state to server:', e);
+          }
+        },
+        async loadReadItems() {
+          try {
+            // 先从 localStorage 加载本地缓存
+            const saved = localStorage.getItem('rss-read-items');
+            if (saved) {
+              const items = JSON.parse(saved);
+              this.readItems = new Set(items);
+            }
+            
+            // 从后端加载已读状态并合并
+            const response = await fetch('/api/read-state');
+            if (response.ok) {
+              const serverItems = await response.json();
+              if (Array.isArray(serverItems)) {
+                // 合并后端数据到本地
+                serverItems.forEach(link => this.readItems.add(link));
+                this.saveReadItems();
+                
+                // 同步本地独有的数据到后端
+                const localItems = saved ? JSON.parse(saved) : [];
+                const localOnly = localItems.filter(link => !serverItems.includes(link));
+                if (localOnly.length > 0) {
+                  await fetch('/api/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ links: localOnly })
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load read items:', e);
+          }
+        },
+        saveReadItems() {
+          try {
+            // 只保留最近1000条已读记录，避免 localStorage 过大
+            const items = Array.from(this.readItems).slice(-1000);
+            localStorage.setItem('rss-read-items', JSON.stringify(items));
+          } catch (e) {
+            console.error('Failed to save read items:', e);
+          }
+        }
       },
       async created() {
         this.fullscreenLoading = false;
         // 使用媒体查询判断设备类型
         this.isPc = !window.matchMedia('(max-width: 767px)').matches;
+        // 初始化倒计时显示
+        this.updateCountdown();
+        // 加载已读状态
+        this.loadReadItems();
       },
       async mounted() {
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -204,12 +404,16 @@
           };
           if (this.isPc && this.autoUpdatePush > 0) {
             setInterval(sendHeartbeat, 60000);
+          }
+          // 倒计时更新（无论是否PC都显示）
+          if (this.autoUpdatePush > 0) {
             setInterval(() => {
               if (this.countdown > 0) {
                 this.countdown--;
               } else {
-                this.countdown = 60;
+                this.countdown = this.autoUpdatePush * 60;
               }
+              this.updateCountdown();
             }, 1000);
           }
         };
@@ -223,6 +427,76 @@
 
     app.use(ElementPlus);
     app.mount("#app");
+
+    // 服务端渲染的时间转换为相对时间
+    function timeAgo(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr.replace(/-/g, '/'));
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+      
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+      if (diff < 2592000) return Math.floor(diff / 86400) + ' 天前';
+      return dateStr;
+    }
+    
+    // 更新页面上的时间显示
+    document.querySelectorAll('time[data-time]').forEach(el => {
+      el.textContent = timeAgo(el.getAttribute('data-time'));
+    });
+
+    // 处理服务端渲染条目的已读状态
+    (async function() {
+      try {
+        // 先从 localStorage 加载
+        const saved = localStorage.getItem('rss-read-items');
+        let readItems = saved ? new Set(JSON.parse(saved)) : new Set();
+        
+        // 尝试从后端加载已读状态
+        try {
+          const response = await fetch('/api/read-state');
+          if (response.ok) {
+            const serverItems = await response.json();
+            if (Array.isArray(serverItems)) {
+              serverItems.forEach(link => readItems.add(link));
+              // 更新 localStorage
+              const items = Array.from(readItems).slice(-1000);
+              localStorage.setItem('rss-read-items', JSON.stringify(items));
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch read state from server:', e);
+        }
+        
+        // 恢复已读状态
+        document.querySelectorAll('.seo-item').forEach(el => {
+          const link = el.getAttribute('data-link');
+          if (readItems.has(link)) {
+            el.classList.add('item-read');
+          }
+          
+          // 添加点击事件
+          el.addEventListener('click', function() {
+            if (readItems.has(link)) return;
+            readItems.add(link);
+            el.classList.add('item-read');
+            // 保存到 localStorage
+            const items = Array.from(readItems).slice(-1000);
+            localStorage.setItem('rss-read-items', JSON.stringify(items));
+            // 同步到后端
+            fetch('/api/mark-read', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ link: link })
+            }).catch(e => console.error('Failed to sync read state:', e));
+          });
+        });
+      } catch (e) {
+        console.error('Failed to handle read items:', e);
+      }
+    })();
   </script>
 </body>
 </html>

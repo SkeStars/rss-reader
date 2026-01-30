@@ -1,18 +1,53 @@
 {
-    "values": [
-        "https://www.zhihu.com/rss",
-        "https://tech.meituan.com/feed/",
-        "http://www.ruanyifeng.com/blog/atom.xml",
-        "https://feeds.appinn.com/appinns/",
-        "https://v2ex.com/feed/tab/tech.xml",
-        "http://www.sciencenet.cn/xml/blog.aspx?di=30",
-        "https://www.douban.com/feed/review/book",
-        "https://www.douban.com/feed/review/movie",
-        "https://www.geekpark.net/rss",
-        "https://hostloc.com/forum.php?mod=rss&fid=45&auth=389ec3vtQanmEuRoghE%2FpZPWnYCPmvwWgSa7RsfjbQ%2BJpA%2F6y6eHAx%2FKqtmPOg"
+    "sources": [
+        {
+            "name": "虎嗅热文",
+            "icon": "https://gimg3.baidu.com/yule/src=https%3A%2F%2Favatar.bdstatic.com%2Fit%2Fu%3D3363866523%2C2004996983%26fm%3D3012%26app%3D3012%26autime%3D1767836941%26size%3Db360%2C360&refer=http%3A%2F%2Fwww.baidu.com&app=2019&size=w931&n=0&g=0n&er=404&q=75&fmt=auto&maxorilen2heic=2000000?sec=1769878800&t=9b7a69977e74bc0fe8fe4d9ebcfd3004",
+            "urls": [
+                {"url": "https://open-v2.huxiu.com/news/getnewslist?HUXIUOPENID=chouti&HUXIUOPENKEY=ed2f121cbbf65b726998f689d1aebdc2&data_type=xml&content=1.rss", "name": "虎嗅网"}
+            ]
+        },
+        {   
+            "url": "https://bf.zzxworld.com/feed.xml"
+        },
+        {
+            "url": "https://www.huxiu.com/rss/0.xml",
+            "icon": "https://gimg3.baidu.com/yule/src=https%3A%2F%2Favatar.bdstatic.com%2Fit%2Fu%3D3363866523%2C2004996983%26fm%3D3012%26app%3D3012%26autime%3D1767836941%26size%3Db360%2C360&refer=http%3A%2F%2Fwww.baidu.com&app=2019&size=w931&n=0&g=0n&er=404&q=75&fmt=auto&maxorilen2heic=2000000?sec=1769878800&t=9b7a69977e74bc0fe8fe4d9ebcfd3004"
+        },
+        {
+            "name": "轻松一刻",
+            "icon": "https://th.bing.com/th/id/ODF.XCBEBSJSE3TYEQI10xU6Dw?w=32&h=32&qlt=93&pcl=fffffa&o=6&pid=1.2",
+            "urls": [
+                {"url": "https://feedx.net/rss/163easy.xml", "name": "网易"},
+                {"url": "http://hornydragon.blogspot.com/feeds/posts/default", "name": "好色龍"}
+            ]
+        },
+        {
+            "url": "https://hostloc.com/forum.php?mod=rss&fid=45&auth=389ec3vtQanmEuRoghE%2FpZPWnYCPmvwWgSa7RsfjbQ%2BJpA%2F6y6eHAx%2FKqtmPOg",
+            "name": "全球主机交流论坛",
+            "filter": {
+                "enabled": false,
+                "customPrompt": "你是一个严格的内容分类器。判断给定的RSS文章是否为广告、推广内容、软文或低质量内容。请返回JSON格式：{\"is_filtered\": boolean, \"confidence\": 0-1之间的浮点数, \"reason\": \"过滤原因\"}",
+                "threshold": 0.8,
+                "filterKeywords": ["招聘", "广告"],
+                "keepKeywords": ["开源", "教程"]
+            }
+        }
     ],
-    "refresh": 6,
-    "autoUpdatePush": 7,
-    "nightStartTime": "06:30:00",
-    "nightEndTime": "19:30:00"
+    "refresh": 30,
+    "autoUpdatePush": 15,
+    "nightStartTime": "00:00:00",
+    "nightEndTime": "23:59:59",
+    "aiFilter": {
+        "enabled": true,
+        "apiKey": "",
+        "apiBase": "https://ark.cn-beijing.volces.com/api/v3",
+        "model": "doubao-seed-1-8-251228",
+        "systemPrompt": "你是一个严格的内容分类器。判断给定的RSS文章是否为广告、推广内容、软文或低质量内容。请返回JSON格式：{\"is_filtered\": boolean, \"confidence\": 0-1之间的浮点数, \"reason\": \"过滤原因\"}",
+        "threshold": 0.7,
+        "maxTokens": 500,
+        "temperature": 0.1,
+        "timeout": 30,
+        "concurrency": 5
+    }
 }

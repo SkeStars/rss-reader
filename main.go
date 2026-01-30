@@ -5,8 +5,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"rss-reader/globals"
 	"rss-reader/models"
+	"syscall"
 
 	"rss-reader/utils"
 	"time"
@@ -16,20 +19,40 @@ import (
 
 func init() {
 	globals.Init()
+	utils.InitPersistence()
 }
 
 func main() {
+	// 设置优雅关闭
+	go handleShutdown()
+	
 	go utils.UpdateFeeds()
 	go utils.WatchConfigFileChanges("config.json")
 	http.HandleFunc("/feeds", getFeedsHandler)
 	http.HandleFunc("/ws", wsHandler)
 	// http.HandleFunc("/", serveHome)
 	http.HandleFunc("/", tplHandler)
+	
+	// 已读状态 API
+	http.HandleFunc("/api/read-state", readStateHandler)
+	http.HandleFunc("/api/mark-read", markReadHandler)
+	http.HandleFunc("/api/mark-unread", markUnreadHandler)
+	http.HandleFunc("/api/clear-read", clearReadHandler)
 
 	//加载静态文件
 	fs := http.FileServer(http.FS(globals.DirStatic))
 	http.Handle("/static/", fs)
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+// handleShutdown 处理优雅关闭
+func handleShutdown() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+	log.Println("收到关闭信号，正在保存数据...")
+	utils.Shutdown()
+	os.Exit(0)
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
@@ -91,15 +114,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer conn.Close()
 	for {
-		for _, url := range globals.RssUrls.Values {
-			globals.Lock.RLock()
-			cache, ok := globals.DbMap[url]
-			globals.Lock.RUnlock()
-			if !ok {
-				log.Printf("Error getting feed from db is null %v", url)
-				continue
-			}
-			data, err := json.Marshal(cache)
+		// 发送所有feeds（包括文件夹聚合的）
+		feeds := utils.GetFeeds()
+		for _, feed := range feeds {
+			data, err := json.Marshal(feed)
 			if err != nil {
 				log.Printf("json marshal failure: %s", err.Error())
 				continue
@@ -108,7 +126,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			err = conn.WriteMessage(websocket.TextMessage, data)
 			//错误直接关闭更新
 			if err != nil {
-				log.Printf("Error sending message or Connection closed: %v", err)
+				// 客户端断开连接是正常行为，不需要记录为错误
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+					log.Printf("WebSocket unexpected close: %v", err)
+				}
 				return
 			}
 		}
@@ -124,16 +145,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 //获取feeds列表
 func getKeywords() string {
 	words := ""
-	for _, url := range globals.RssUrls.Values {
-		globals.Lock.RLock()
-		cache, ok := globals.DbMap[url]
-		globals.Lock.RUnlock()
-		if !ok {
-			log.Printf("Error getting feed from db is null %v", url)
-			continue
-		}
-		if cache.Title != "" {
-			words += cache.Title + ","
+	feeds := utils.GetFeeds()
+	for _, feed := range feeds {
+		if feed.Title != "" {
+			words += feed.Title + ","
 		}
 	}
 	return words
@@ -144,4 +159,94 @@ func getFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(feeds)
+}
+
+// readStateHandler 获取已读状态
+func readStateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	readState := utils.GetReadState()
+	
+	// 只返回链接列表，不返回时间戳（减少数据量）
+	links := make([]string, 0, len(readState))
+	for link := range readState {
+		links = append(links, link)
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(links)
+}
+
+// markReadHandler 标记文章为已读
+func markReadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var req struct {
+		Links []string `json:"links"`
+		Link  string   `json:"link"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	// 支持单个或批量标记
+	if len(req.Links) > 0 {
+		utils.MarkReadBatch(req.Links)
+	} else if req.Link != "" {
+		utils.MarkRead(req.Link)
+	} else {
+		http.Error(w, "Missing link or links", http.StatusBadRequest)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
+}
+
+// markUnreadHandler 标记文章为未读
+func markUnreadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var req struct {
+		Link string `json:"link"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	if req.Link == "" {
+		http.Error(w, "Missing link", http.StatusBadRequest)
+		return
+	}
+	
+	utils.MarkUnread(req.Link)
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
+}
+
+// clearReadHandler 清除所有已读状态
+func clearReadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	utils.ClearAllReadState()
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
 }
