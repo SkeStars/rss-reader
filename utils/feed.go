@@ -389,7 +389,7 @@ func buildFolderFeed(source models.FeedSource) *models.Feed {
 		Link:     "folder:" + source.Name,
 		Icon:     source.Icon, // 文件夹的自定义图标
 		IsFolder: true,
-		Custom:   map[string]string{"lastupdate": "2000-01-01 00:00:00"},
+		Custom:   map[string]string{"lastupdate": "加载失败，请稍后重试"},
 		Items:    make([]models.Item, 0),
 	}
 
@@ -416,8 +416,16 @@ func buildFolderFeed(source models.FeedSource) *models.Feed {
 		}
 
 		// 更新文件夹的最后更新时间为最新的源更新时间
-		if cache.Custom["lastupdate"] > folderFeed.Custom["lastupdate"] {
-			folderFeed.Custom["lastupdate"] = cache.Custom["lastupdate"]
+		// 只有当前文件夹时间是错误消息，或者新时间是有效时间戳且更新时才更新
+		currentTime := folderFeed.Custom["lastupdate"]
+		cacheTime := cache.Custom["lastupdate"]
+		
+		// 如果当前是错误消息，且缓存有有效时间，则使用缓存时间
+		if currentTime == "加载失败，请稍后重试" && cacheTime != "加载失败，请稍后重试" {
+			folderFeed.Custom["lastupdate"] = cacheTime
+		} else if currentTime != "加载失败，请稍后重试" && cacheTime != "加载失败，请稍后重试" && cacheTime > currentTime {
+			// 两者都是有效时间戳时，使用较新的
+			folderFeed.Custom["lastupdate"] = cacheTime
 		}
 
 		// 确定来源名称：优先使用自定义名称
