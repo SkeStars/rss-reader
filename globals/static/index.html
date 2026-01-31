@@ -20,6 +20,11 @@
   << end >>
   <link rel="icon" href="static/favicon.svg" type="image/x-icon">
   <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
+    }
+
     body {
       font-family: "Avenir", Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -139,6 +144,8 @@
       transition: all 0.3s;
       cursor: pointer;
       border: 1px solid #e8e8e8;
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
     }
 
     .el-card__header {
@@ -189,6 +196,17 @@
       color: #666 !important;
     }
     << end >>
+
+    /* 修复移动端链接粗体问题 */
+    .el-link,
+    .el-link__inner {
+      font-weight: normal !important;
+    }
+
+    .item-content .el-link,
+    .item-content .el-link__inner {
+      font-weight: normal !important;
+    }
   </style>
 </head>
 
