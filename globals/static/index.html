@@ -431,7 +431,7 @@
         }
 
         .settings-btn {
-          position: fixed;
+          position: absolute;
           top: 20px;
           right: 20px;
           z-index: 2000;
@@ -444,6 +444,80 @@
         .settings-btn:hover {
           color: #409EFF;
         }
+
+        /* Feed Management Mobile Styles */
+        .mobile-feed-list {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          padding-bottom: 20px;
+        }
+
+        .mobile-feed-card {
+          background: white;
+          border-radius: 8px;
+          padding: 15px;
+          box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+          border: 1px solid #ebeef5;
+        }
+
+        .mobile-card-header {
+          font-weight: bold;
+          font-size: 16px;
+          margin-bottom: 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .mobile-card-row {
+          display: flex;
+          margin-bottom: 8px;
+          font-size: 14px;
+          align-items: center;
+        }
+
+        .mobile-card-row label {
+          width: 50px;
+          color: #909399;
+          flex-shrink: 0;
+          font-weight: 500;
+        }
+
+        .mobile-card-value {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .mobile-card-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 15px;
+          justify-content: flex-end;
+          border-top: 1px solid #f0f0f0;
+          padding-top: 12px;
+        }
+
+        << if .DarkMode>>.mobile-feed-card {
+          background: #2d2d2d;
+          border-color: #3a3a3a;
+          color: #ccc;
+        }
+
+        .mobile-card-header {
+          border-bottom-color: #3a3a3a;
+        }
+
+        .mobile-card-actions {
+          border-top-color: #3a3a3a;
+        }
+
+        << end>>
 
         /* Password Modal Styling */
         .password-dialog .el-dialog {
@@ -503,9 +577,11 @@
   </div>
   <div id="app" v-cloak>
     <div class="settings-btn" @click="openSettings">
-      <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
         <path
-          d="M458.5 906.5c-6.8-21.7-14.7-43-23.8-63.7-13.8 3.2-28 4.9-42.5 4.9-88.3 0-163.7-56.1-192.3-134.8-5.3-14.7-8.2-30.5-8.2-46.9 0-77.9 63.1-141 141-141 18.2 0 35.6 3.4 51.6 9.7 13.9-35.3 33.3-68.5 57.3-98.7-27.1-12.7-57.5-19.8-89.6-19.8-115.8 0-209.7 93.9-209.7 209.7 0 115.8 93.9 209.7 209.7 209.7 41 0 79.4-11.7 112.5-32 3.8-12.8 7.3-25.9 10.4-39.2l-16.4 42.1z m364.6-200c-25-68.9-90.6-118-167.9-118-20.6 0-40.3 3.5-58.6 9.8-12.7-26.6-28.8-51.5-47.5-74.4 34.6-14.9 72.8-23.2 113.1-23.2 153.3 0 277.6 124.3 277.6 277.6 0 153.3-124.3 277.6-277.6 277.6-43.1 0-83.9-9.5-120.6-26.4 12.3-25.6 22-52.4 28.7-80.2 17.5 5.8 36.1 9 55.4 9 96.6 0 177.3-68.8 197.4-160.7z m-346.5-62.6c11.6 19.3 20.8 40.1 27.2 62.1 6.4 22 9.6 44.9 9.6 68.3 0 22.9-3.2 45.2-9.2 66.8-6.1 21.6-15 41.9-26.3 60.8-11.3 18.9-25.1 35.8-41 50.5-15.9 14.7-33.8 26.8-53.3 36-19.5 9.2-40.6 15.6-62.8 19-22.1 3.4-44.9 4.3-67.9 2.5-22.9-1.8-45.3-6.8-66.8-14.8-21.5-8-41.5-19.1-59.7-33.1L523 490.6c19.3 12.5 36.5 28 51.3 46.1 14.8 18.1 26.9 38.6 36 61.1z M628.7 348.8c42.8 0 77.5 34.7 77.5 77.5s-34.7 77.5-77.5 77.5-77.5-34.7-77.5-77.5 34.7-77.5 77.5-77.5z">
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
         </path>
       </svg>
     </div>
@@ -537,7 +613,7 @@
 
     <!-- Config Modal -->
     <el-dialog title="系统配置" v-model="showConfigModal" fullscreen :show-close="true">
-      <div v-if="config" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+      <div v-if="config" :style="{ padding: isPc ? '20px' : '10px', maxWidth: '1200px', margin: '0 auto' }">
         <el-tabs v-model="activeTab">
           <!-- Feeds Tab -->
           <el-tab-pane label="订阅源管理" name="feeds">
@@ -546,7 +622,8 @@
               <el-button type="success" icon="el-icon-folder-add" @click="addFolder">添加文件夹</el-button>
             </div>
 
-            <el-table :data="config.sources" style="width: 100%" row-key="_id" border default-expand-all>
+            <!-- PC View -->
+            <el-table v-if="isPc" :data="config.sources" style="width: 100%" row-key="_id" border default-expand-all>
               <el-table-column prop="name" label="名称" width="200">
                 <template #default="scope">
                   <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
@@ -597,11 +674,63 @@
                 </template>
               </el-table-column>
             </el-table>
+
+            <!-- Mobile View -->
+            <div v-else class="mobile-feed-list">
+              <div v-for="(item, index) in config.sources" :key="item._id" class="mobile-feed-card">
+                <div class="mobile-card-header">
+                  <span class="mobile-card-title">
+                    <el-input v-if="item.editMode" v-model="item.name" size="small" placeholder="名称"></el-input>
+                    <span v-else>{{ item.name || (item.urls ? '文件夹' : '未命名') }}</span>
+                  </span>
+                  <el-tag size="mini" v-if="item.urls">文件夹</el-tag>
+                </div>
+
+                <div class="mobile-card-row">
+                  <label>URL:</label>
+                  <div class="mobile-card-value">
+                    <el-input v-if="item.editMode && !item.urls" v-model="item.url" size="small"
+                      placeholder="URL"></el-input>
+                    <span v-else>{{ item.url }}</span>
+                    <div v-if="item.urls">
+                      <el-tag size="mini" type="info">包含 {{ item.urls.length }} 个源</el-tag>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mobile-card-row">
+                  <label>分组:</label>
+                  <div class="mobile-card-value">
+                    <el-input v-if="item.editMode" v-model="item.group" size="small" placeholder="默认: 关注"></el-input>
+                    <span v-else>{{ item.group || '关注' }}</span>
+                  </div>
+                </div>
+
+                <div class="mobile-card-actions">
+                  <el-button-group>
+                    <el-button size="mini" @click="moveSourceUp(index)" :disabled="index === 0">↑</el-button>
+                    <el-button size="mini" @click="moveSourceDown(index)"
+                      :disabled="index === config.sources.length - 1">↓</el-button>
+                  </el-button-group>
+
+                  <el-button v-if="!item.editMode" type="primary" size="mini" plain
+                    @click="enableEdit(item)">编辑</el-button>
+                  <el-button v-else type="success" size="mini" @click="saveEdit(item)">保存</el-button>
+
+                  <el-button type="info" size="mini" plain @click="openFeedSettings(item)">设置</el-button>
+
+                  <el-button v-if="item.urls" type="warning" size="mini" plain
+                    @click="manageFolder(item)">内容</el-button>
+
+                  <el-button type="danger" size="mini" plain @click="removeSource(index)">删除</el-button>
+                </div>
+              </div>
+            </div>
           </el-tab-pane>
 
           <!-- General Settings Tab -->
           <el-tab-pane label="基础设置" name="general">
-            <el-form label-width="120px">
+            <el-form :label-position="isPc ? 'right' : 'top'" :label-width="isPc ? '120px' : 'auto'">
               <el-form-item label="自动刷新(分钟)">
                 <el-input-number v-model="config.refresh" :min="0" :max="1440"></el-input-number>
                 <div class="tip">设为0则关闭自动刷新</div>
@@ -620,7 +749,7 @@
 
           <!-- AI Filter Tab -->
           <el-tab-pane label="AI 过滤" name="ai">
-            <el-form label-width="120px">
+            <el-form :label-position="isPc ? 'right' : 'top'" :label-width="isPc ? '120px' : 'auto'">
               <el-form-item label="启用 AI 过滤">
                 <el-switch v-model="config.aiFilter.enabled"></el-switch>
               </el-form-item>
@@ -653,11 +782,13 @@
       </span>
 
       <!-- Folder Management Dialog -->
-      <el-dialog title="文件夹内容管理" v-model="showFolderModal" width="80%" append-to-body>
+      <el-dialog title="文件夹内容管理" v-model="showFolderModal" :width="isPc ? '600px' : '95%'" append-to-body>
         <div v-if="currentFolder">
           <el-button type="primary" size="small" icon="el-icon-plus" @click="addFeedToFolder"
             style="margin-bottom: 10px;">添加源</el-button>
-          <el-table :data="currentFolder.urls" border>
+
+          <!-- PC Table -->
+          <el-table v-if="isPc" :data="currentFolder.urls" border>
             <el-table-column prop="name" label="名称">
               <template #default="scope">
                 <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
@@ -694,14 +825,50 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <!-- Mobile List -->
+          <div v-else class="mobile-feed-list">
+            <div v-for="(item, index) in currentFolder.urls" :key="index" class="mobile-feed-card">
+              <div class="mobile-card-header">
+                <div class="mobile-card-title" style="flex:1">
+                  <el-input v-if="item.editMode" v-model="item.name" size="small" placeholder="名称"></el-input>
+                  <span v-else>{{ item.name }}</span>
+                </div>
+              </div>
+
+              <div class="mobile-card-row">
+                <label>URL:</label>
+                <div class="mobile-card-value">
+                  <el-input v-if="item.editMode" v-model="item.url" size="small" placeholder="URL"></el-input>
+                  <span v-else>{{ item.url }}</span>
+                </div>
+              </div>
+
+              <div class="mobile-card-actions">
+                <el-button-group>
+                  <el-button size="mini" @click="moveFeedInFolderUp(index)" :disabled="index === 0">↑</el-button>
+                  <el-button size="mini" @click="moveFeedInFolderDown(index)"
+                    :disabled="index === currentFolder.urls.length - 1">↓</el-button>
+                </el-button-group>
+
+                <el-button v-if="!item.editMode" type="primary" size="mini" plain
+                  @click="enableEdit(item)">编辑</el-button>
+                <el-button v-else type="success" size="mini" @click="saveEdit(item)">保存</el-button>
+
+                <el-button type="info" size="mini" plain @click="openFeedSettings(item)">设置</el-button>
+
+                <el-button type="danger" size="mini" plain @click="removeFeedFromFolder(index)">删除</el-button>
+              </div>
+            </div>
+          </div>
         </div>
       </el-dialog>
     </el-dialog>
 
     <!-- Feed Settings Modal -->
-    <el-dialog title="源高级设置" v-model="showFeedSettingsModal" width="600px" append-to-body>
+    <el-dialog title="源高级设置" v-model="showFeedSettingsModal" :width="isPc ? '600px' : '95%'" append-to-body>
       <div v-if="currentEditingFeed">
-        <el-form label-width="120px">
+        <el-form :label-position="isPc ? 'right' : 'top'" :label-width="isPc ? '120px' : 'auto'">
           <el-form-item label="图标 URL">
             <el-input v-model="currentEditingFeed.icon" placeholder="https://..."></el-input>
           </el-form-item>
@@ -1314,11 +1481,15 @@
             this.currentFolder.urls.splice(index + 1, 0, item);
           }
         },
+        checkIsPc() {
+          this.isPc = !window.matchMedia('(max-width: 767px)').matches;
+        },
       },
       async created() {
         this.fullscreenLoading = false;
-        // 使用媒体查询判断设备类型
-        this.isPc = !window.matchMedia('(max-width: 767px)').matches;
+        // Initialize isPc and add listener
+        this.checkIsPc();
+        window.addEventListener('resize', this.checkIsPc);
 
         // Calculate countdown based on target time
         if (this.targetTimeStr && this.refreshInterval > 0) {
