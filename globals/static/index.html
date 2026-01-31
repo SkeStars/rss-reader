@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,272 +16,402 @@
   <link rel="manifest" href="static/manifest.json">
   <!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
   <link rel="stylesheet" href="static/index.min.css">
-  << if .DarkMode >>
+  << if .DarkMode>>
     <link rel="stylesheet" href="static/dark-mode.css">
-  << end >>
-  <link rel="icon" href="static/favicon.svg" type="image/x-icon">
-  <style>
-    * {
-      -webkit-tap-highlight-color: transparent;
-      tap-highlight-color: transparent;
-    }
+    << end>>
+      <link rel="icon" href="static/favicon.svg" type="image/x-icon">
+      <style>
+        * {
+          -webkit-tap-highlight-color: transparent;
+          tap-highlight-color: transparent;
+        }
 
-    body {
-      font-family: "Avenir", Helvetica, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-align: center;
-      color: #2c3e50;
-      margin-top: 30px;
-    }
+        body {
+          font-family: "Avenir", Helvetica, Arial, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-align: center;
+          color: #2c3e50;
+          margin-top: 10px;
+          background-color: #f5f5f5;
+        }
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 16px;
-      font-weight: normal;
-      padding: 10px 10px 10px 5px !important;
-    }
+        h1 {
+          margin-top: 15px;
+          margin-bottom: 15px;
+        }
 
-    .card-header-left {
-      display: flex;
-      align-items: center;
-      flex: 1;
-    }
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 16px;
+          font-weight: normal;
+          padding: 10px 10px 10px 5px !important;
+        }
 
-    .card-header-right {
-      margin-left: 10px;
-      flex-shrink: 0;
-    }
+        .card-header-left {
+          display: flex;
+          align-items: center;
+          flex: 1;
+        }
 
-    .card-header-icon {
-      width: 20px;
-      height: 20px;
-      margin-right: 8px;
-      border-radius: 4px;
-      background-color: transparent;
-    }
+        .card-header-right {
+          margin-left: 10px;
+          flex-shrink: 0;
+        }
 
-    .card-header-title {
-      font-weight: 500;
-    }
+        .card-header-icon {
+          width: 20px;
+          height: 20px;
+          margin-right: 8px;
+          border-radius: 4px;
+          background-color: transparent;
+        }
 
-    .list-item {
-      display: flex;
-      align-items: center;
-      text-align: left;
-      width: 100%;
-    }
+        .card-header-title {
+          font-weight: 500;
+          cursor: pointer;
+        }
 
-    .list-item-title {
-      display: flex;
-      align-items: flex-start;
-      text-align: left;
-      width: 100%;
-      margin-bottom: 6px;
-      line-height: 1.6;
-      padding-right: 10px;
-      box-sizing: border-box;
-    }
+        .card-header-title:hover {
+          opacity: 0.7;
+        }
 
-    .item-number {
-      flex-shrink: 0;
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      margin-right: 8px;
-      margin-top: 1px;
-      padding-top: 2px;
-      font-size: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #e8e8e8;
-      border-radius: 6px;
-      color: #666;
-      line-height: 1;
-      box-sizing: border-box;
-    }
+        .time {
+          cursor: pointer;
+        }
 
-    << if .DarkMode >>
-    .item-number {
-      background-color: #3a3a3a;
-      color: #999;
-    }
-    << end >>
+        .time:hover {
+          opacity: 0.7;
+        }
 
-    .item-content {
-      flex: 1;
-      line-height: 1.6;
-      word-break: break-word;
-    }
+        .list-item {
+          display: flex;
+          align-items: center;
+          text-align: left;
+          width: 100%;
+        }
 
-    .item-content a,
-    .item-content .el-link,
-    .item-content .el-link__inner {
-      display: inline !important;
-    }
+        .list-item-title {
+          display: flex;
+          align-items: flex-start;
+          text-align: left;
+          width: 100%;
+          margin-bottom: 6px;
+          line-height: 1.6;
+          padding-right: 10px;
+          box-sizing: border-box;
+        }
 
-    .item-content .source-tag {
-      display: inline;
-      white-space: nowrap;
-    }
+        .number-wrapper {
+          display: flex;
+          margin-right: 8px;
+          flex-shrink: 0;
+          margin-top: calc(0.65em - 10px);
+        }
 
-    a {
-      color: black;
-      text-decoration: none;
-    }
+        .item-number {
+          width: 20px;
+          height: 20px;
+          min-width: 20px;
+          font-size: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #e8e8e8;
+          border-radius: 6px;
+          color: #666;
+          line-height: 1;
+          box-sizing: border-box;
+          padding-top: 2px;
+        }
 
-    a:hover {
-      text-decoration: underline;
-    }
-    .feed-col {
-      margin-bottom: 20px;
-    }
+        << if .DarkMode>>.item-number {
+          background-color: #3a3a3a;
+          color: #999;
+        }
 
-    .box-card {
-      border-radius: 12px;
-      transition: all 0.3s;
-      cursor: pointer;
-      border: 1px solid #e8e8e8;
-      -webkit-tap-highlight-color: transparent;
-      tap-highlight-color: transparent;
-    }
+        << end>>.item-content {
+          flex: 1;
+          line-height: 1.6;
+          word-break: break-word;
+        }
 
-    .el-card__header {
-      padding: 25px 0px 10px 0px !important;
-    }
+        .item-content a,
+        .item-content .el-link,
+        .item-content .el-link__inner {
+          display: inline !important;
+        }
 
-    .el-card__body {
-      padding: 0px 5px 0px 12px !important;
-    }
+        .item-content .source-tag {
+          display: inline;
+          white-space: nowrap;
+        }
 
-    << if .DarkMode >>
-    .box-card {
-      border-color: #3a3a3a;
-    }
-    << end >>
+        a {
+          color: black;
+          text-decoration: none;
+        }
 
-    .time {
-      font-size: 12px;
-      color: #999;
-    }
+        a:hover {
+          text-decoration: none;
+        }
 
-    .source-tag {
-      font-size: 12px;
-      color: #909399;
-      display: inline;
-      vertical-align: middle;
-      margin-left: 0.3em;
-    }
+        .el-link {
+          color: black !important;
+          text-decoration: none !important;
+        }
 
-    .footer-countdown {
-      font-size: 10px;
-      color: #999;
-      margin-left: 10px;
-    }
+        .el-link:hover {
+          text-decoration: none !important;
+        }
 
-    .item-read {
-      opacity: 0.5;
-    }
+        .el-link__inner {
+          text-decoration: none !important;
+          border-bottom: none !important;
+        }
 
-    .item-read a,
-    .item-read .el-link {
-      color: #999 !important;
-    }
+        /* 移除el-list-item的底部边框 */
+        .el-list-item {
+          border-bottom: none !important;
+        }
 
-    << if .DarkMode >>
-    .item-read a,
-    .item-read .el-link {
-      color: #666 !important;
-    }
-    << end >>
+        .feed-col {
+          margin-bottom: 20px;
+        }
 
-    /* 修复移动端链接粗体问题 */
-    .el-link,
-    .el-link__inner {
-      font-weight: normal !important;
-    }
+        .box-card {
+          border-radius: 12px;
+          transition: all 0.3s;
+          cursor: pointer;
+          border: 1px solid #e8e8e8;
+          -webkit-tap-highlight-color: transparent;
+          tap-highlight-color: transparent;
+        }
 
-    .item-content .el-link,
-    .item-content .el-link__inner {
-      font-weight: normal !important;
-    }
-  </style>
+        .el-card__header {
+          padding: 25px 0px 10px 0px !important;
+        }
+
+        .el-card__body {
+          padding: 0px 5px 0px 12px !important;
+        }
+
+        << if .DarkMode>>.box-card {
+          border-color: #3a3a3a;
+        }
+
+        << end>>.time {
+          font-size: 12px;
+          color: #999;
+        }
+
+        .source-tag {
+          font-size: 12px;
+          color: #909399;
+          display: inline;
+          vertical-align: middle;
+          margin-left: 0.3em;
+        }
+
+        .footer-countdown {
+          font-size: 10px;
+          color: #999;
+          margin-left: 10px;
+        }
+
+        .refresh-all-link {
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .refresh-all-link:hover {
+          color: #409eff;
+          text-decoration: underline;
+        }
+
+        .item-read {
+          opacity: 0.5;
+        }
+
+        .item-read a,
+        .item-read .el-link {
+          color: #999 !important;
+        }
+
+        << if .DarkMode>>.item-read a,
+        .item-read .el-link {
+          color: #666 !important;
+        }
+
+        << end>>
+
+        /* 修复移动端链接粗体问题 */
+        .el-link,
+        .el-link__inner {
+          font-weight: normal !important;
+        }
+
+        .item-content .el-link,
+        .item-content .el-link__inner {
+          font-weight: normal !important;
+        }
+
+        /* 列表条目 Hover 样式优化: 去除下划线，高亮文字 */
+        .list-item-title:hover .el-link,
+        .list-item-title:hover .el-link__inner {
+          color: #409EFF !important;
+          text-decoration: none !important;
+          border-bottom: none !important;
+        }
+
+        /* 强制移除 Element UI 可能添加的伪元素下划线 */
+        .el-link.el-link--default:after,
+        .list-item-title:hover .el-link::after {
+          display: none !important;
+          border-bottom: none !important;
+        }
+
+        /* 滚动容器样式 */
+        .scroll-container {
+          height: 300px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+          background-color: transparent;
+          border-radius: 3px;
+        }
+
+        .scroll-container.scrolling::-webkit-scrollbar-thumb {
+          background-color: #c1c1c1;
+        }
+
+        .scroll-container.scrolling::-webkit-scrollbar-thumb:hover {
+          background-color: #a8a8a8;
+        }
+
+        << if .DarkMode>>body {
+          background-color: #1a1a1a;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+          background-color: transparent;
+        }
+
+        .scroll-container.scrolling::-webkit-scrollbar-thumb {
+          background-color: #4a4a4a;
+        }
+
+        .scroll-container.scrolling::-webkit-scrollbar-thumb:hover {
+          background-color: #5a5a5a;
+        }
+
+        << end>>
+      </style>
 </head>
 
 <body>
   <div id="app">
     <el-container>
-      <el-header>
-        <h1>RSS Reader</h1>
-      </el-header>
+
       <el-main v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="拼命加载中">
         <el-row :gutter="20">
-          << range $index, $feed :=.RssDataList >>
+          << range $index, $feed :=.RssDataList>>
             <el-col v-if="showSEOFlag" :xs="24" :sm="12" :md="8" :lg="6" :key="index" class="feed-col">
-              <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}" :header-style="{padding: '24px 20px 16px 20px'}">
+              <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}"
+                :header-style="{padding: '24px 20px 16px 20px'}">
                 <div slot="header" class="card-header">
                   <div class="card-header-left">
-                    <img class="card-header-icon" src="<< if $feed.Icon >><< $feed.Icon >><<else>>static/favicon.svg<<end>>" alt="icon" onerror="this.src='static/favicon.svg'" />
-                    <span class="card-header-title">
-                      << $feed.Title >>
+                    <img class="card-header-icon"
+                      src="<< if $feed.Icon >><< $feed.Icon >><<else>>static/favicon.svg<<end>>" alt="icon"
+                      onerror="this.src='static/favicon.svg'" />
+                    <span class="card-header-title" onclick="window.open('<< $feed.Link >>', '_blank')">
+                      << $feed.Title>>
                     </span>
                   </div>
                   <div class="card-header-right">
-                    <time class="time" data-time="<< $feed.Custom.lastupdate >>">
-                      << $feed.Custom.lastupdate >>
+                    <time class="time" data-time="<< $feed.Custom.lastupdate >>" onclick="location.reload()">
+                      << $feed.Custom.lastupdate>>
                     </time>
                   </div>
                 </div>
-                <el-scrollbar style="height: 300px;">
-                  << range $i, $item :=$feed.Items >>
+                <div class="scroll-container" @scroll="handleScroll">
+                  << range $i, $item :=$feed.Items>>
                     <el-list key="<< $i >>">
                       <el-list-item>
                         <div class="list-item-title seo-item" data-link="<< $item.Link >>">
-                          <span class="item-number"><< inc $i >></span>
-                          <span class="item-content"><el-link href="<< $item.Link >>" target="_blank" title="<< $item.Title >>"><< $item.Title >></el-link><<if $item.Source>> <span class="source-tag">[<< $item.Source >>]</span><<end>></span>
-                        </div>
-                      </el-list-item>
-                    </el-list>
-                    << end >>
-                </el-scrollbar>
-              </el-card>
-            </el-col>
-            << end>>
-              <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="(feed, index) in feeds" :key="index" class="feed-col">
-                <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}" :header-style="{padding: '24px 20px 16px 20px'}">
-                  <div slot="header" class="card-header">
-                    <div class="card-header-left">
-                      <img class="card-header-icon" :src="feed.icon || 'static/favicon.svg'" :alt="feed.title" />
-                      <span class="card-header-title">{{ feed.title }}</span>
-                    </div>
-                    <div class="card-header-right">
-                      <time class="time">{{ timeAgo(feed.custom.lastupdate) }}</time>
-                    </div>
-                  </div>
-                  <el-scrollbar style="height: 300px;">
-                    <el-list v-for="(item, i) in feed.items" :key="i">
-                      <el-list-item>
-                        <div class="list-item-title" :class="{ 'item-read': isRead(item.link) }" @click="markAsRead(item.link)">
-                          <span class="item-number">{{ i+1 }}</span>
-                          <span class="item-content">
-                            <el-link :href="item.link" target="_blank" :title="item.title">{{ item.title }}</el-link><span v-if="item.source && feed.isFolder" class="source-tag"> [{{ item.source }}]</span>
+                          <div class="number-wrapper">
+                            <span class="item-number">
+                              << inc $i>>
+                            </span>
+                          </div>
+                          <span class="item-content"><el-link href="<< $item.Link >>" target="_blank">
+                              << $item.Title>>
+                            </el-link>
+                            <<if $item.Source>> <span class="source-tag">[<< $item.Source>>]</span>
+                              <<end>>
                           </span>
                         </div>
                       </el-list-item>
                     </el-list>
-                  </el-scrollbar>
+                    << end>>
+                </div>
+              </el-card>
+            </el-col>
+            << end>>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="(feed, index) in feeds" :key="index" class="feed-col">
+                <el-card class="box-card" :body-style="{padding: '0 20px 12px 20px'}"
+                  :header-style="{padding: '24px 20px 16px 20px'}">
+                  <div slot="header" class="card-header">
+                    <div class="card-header-left">
+                      <img class="card-header-icon" :src="feed.icon || 'static/favicon.svg'" :alt="feed.title" />
+                      <span class="card-header-title" @click="openFeedLink(feed.link)">{{ feed.title }}</span>
+                    </div>
+                    <div class="card-header-right">
+                      <time class="time" @click.stop="refreshFeed(feed)">{{ timeAgo(feed.custom.lastupdate) }}</time>
+                    </div>
+                  </div>
+                  <div class="scroll-container" @scroll="handleScroll">
+                    <el-list v-for="(item, i) in feed.items" :key="i">
+                      <el-list-item>
+                        <div class="list-item-title" :class="{ 'item-read': isRead(item.link) }"
+                          @click="markAsRead(item.link)">
+                          <div class="number-wrapper">
+                            <span class="item-number">{{ i+1 }}</span>
+                          </div>
+                          <span class="item-content">
+                            <el-link :href="item.link" target="_blank">{{ item.title
+                              }}</el-link><span v-if="item.source && feed.isFolder" class="source-tag"> [{{ item.source
+                              }}]</span>
+                          </span>
+                        </div>
+                      </el-list-item>
+                    </el-list>
+                  </div>
                 </el-card>
               </el-col>
         </el-row>
       </el-main>
       <el-footer>
-        <el-link href="https://github.com/srcrs/rss-reader" target="_blank">Rss-reader</el-link>
-        << if gt .AutoUpdatePush 0 >>
-          <span class="footer-countdown">| 下次更新: {{ nextUpdateTime }}</span>
-        << end >>
+
+        << if gt .ReFresh 0>>
+          <span class="footer-countdown">下次更新: <span class="refresh-all-link" @click="refreshAll" title="点击刷新所有源">{{
+              nextUpdateTime }}</span></span>
+          << end>>
+            <span v-if="!refreshInterval" class="footer-countdown"><span class="refresh-all-link" @click="refreshAll"
+                title="点击刷新所有源">刷新全部</span></span>
       </el-footer>
     </el-container>
   </div>
@@ -297,9 +428,11 @@
           feeds: [],
           showSEOFlag: true,
           fullscreenLoading: true,
-          countdown: << .AutoUpdatePush >> * 60,
+          showSEOFlag: true,
+          fullscreenLoading: true,
+          countdown: << .ReFresh >> * 60,
           isPc: true,
-          autoUpdatePush: << .AutoUpdatePush >>,
+          refreshInterval: << .ReFresh >>,
           nextUpdateTime: '',
           readItems: new Set(),
         };
@@ -310,7 +443,7 @@
           const date = new Date(dateStr.replace(/-/g, '/'));
           const now = new Date();
           const diff = Math.floor((now - date) / 1000);
-          
+
           if (diff < 60) return '刚刚';
           if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
           if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
@@ -318,10 +451,10 @@
           return dateStr;
         },
         updateCountdown() {
-          if (this.autoUpdatePush === 0) return;
-          
+          if (this.refreshInterval === 0) return;
+
           const minutes = Math.floor(this.countdown / 60);
-          
+
           if (minutes > 60) {
             const hours = Math.floor(minutes / 60);
             const mins = minutes % 60;
@@ -353,6 +486,91 @@
             console.error('Failed to sync read state to server:', e);
           }
         },
+        openFeedLink(link) {
+          if (link) {
+            window.open(link, '_blank');
+          }
+        },
+        async refreshFeed(feed) {
+          try {
+            // 显示加载状态
+            feed._refreshing = true;
+            this.$message.info('正在刷新...');
+
+            // 调用后端API刷新指定源
+            const response = await fetch('/api/refresh-feed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ link: feed.link })
+            });
+
+            if (response.ok) {
+              // 等待后端处理完成
+              // 由于后端已改为同步处理，不再需要强制等待
+              // await new Promise(resolve => setTimeout(resolve, 1500));
+
+              // 获取最新的feeds数据
+              const feedsResponse = await fetch('/feeds');
+              if (feedsResponse.ok) {
+                const feeds = await feedsResponse.json();
+                // 找到对应的feed并更新
+                const updatedFeed = feeds.find(f => f.link === feed.link);
+                if (updatedFeed) {
+                  Object.assign(feed, updatedFeed);
+                  this.$message.success('刷新成功');
+                } else {
+                  this.$message.warning('未找到更新数据');
+                }
+              }
+            } else {
+              this.$message.error('刷新失败');
+            }
+          } catch (e) {
+            console.error('Failed to refresh feed:', e);
+            this.$message.error('刷新失败');
+          } finally {
+            feed._refreshing = false;
+          }
+        },
+        async refreshAll() {
+          try {
+            this.$message.info('正在刷新所有源...');
+
+            // 遍历所有feeds并调用后端API刷新
+            const promises = this.feeds.map(feed =>
+              fetch('/api/refresh-feed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ link: feed.link })
+              })
+            );
+
+            await Promise.all(promises);
+
+            // 等待后端处理完成
+            // await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // 获取最新的feeds数据
+            const feedsResponse = await fetch('/feeds');
+            if (feedsResponse.ok) {
+              const feeds = await feedsResponse.json();
+              // 更新所有feeds
+              feeds.forEach(newFeed => {
+                const existingFeed = this.feeds.find(f => f.link === newFeed.link);
+                if (existingFeed) {
+                  Object.assign(existingFeed, newFeed);
+                }
+              });
+              this.$message.success('全部刷新成功');
+              // 重置倒计时
+              this.countdown = this.refreshInterval * 60;
+              this.updateCountdown();
+            }
+          } catch (e) {
+            console.error('Failed to refresh all feeds:', e);
+            this.$message.error('刷新失败');
+          }
+        },
         async loadReadItems() {
           try {
             // 先从 localStorage 加载本地缓存
@@ -361,7 +579,7 @@
               const items = JSON.parse(saved);
               this.readItems = new Set(items);
             }
-            
+
             // 从后端加载已读状态并合并
             const response = await fetch('/api/read-state');
             if (response.ok) {
@@ -370,7 +588,7 @@
                 // 合并后端数据到本地
                 serverItems.forEach(link => this.readItems.add(link));
                 this.saveReadItems();
-                
+
                 // 同步本地独有的数据到后端
                 const localItems = saved ? JSON.parse(saved) : [];
                 const localOnly = localItems.filter(link => !serverItems.includes(link));
@@ -395,6 +613,14 @@
           } catch (e) {
             console.error('Failed to save read items:', e);
           }
+        },
+        handleScroll(e) {
+          const container = e.target;
+          container.classList.add('scrolling');
+          if (container.scrollTimeout) clearTimeout(container.scrollTimeout);
+          container.scrollTimeout = setTimeout(() => {
+            container.classList.remove('scrolling');
+          }, 1000);
         }
       },
       async created() {
@@ -422,17 +648,12 @@
           };
           const reloadHtml = () => {
             if (socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) {
-              if (document.visibilityState === 'visible') {
-                // 刷新网页
-                console.log("reload...")
-                location.reload();
-              }
+              console.log("WebSocket disconnected");
             }
           }
           socket.onclose = event => {
-            if (this.isPc && this.autoUpdatePush > 0) {
-              console.log("WebSocket closed. Reconnecting...");
-              setInterval(reloadHtml, 3000);
+            if (this.isPc && this.refreshInterval > 0) {
+              console.log("WebSocket closed.");
             }
           };
           // Send heartbeat message every 60 seconds
@@ -443,22 +664,30 @@
               reloadHtml()
             }
           };
-          if (this.isPc && this.autoUpdatePush > 0) {
+          if (this.isPc && this.refreshInterval > 0) {
             setInterval(sendHeartbeat, 60000);
           }
           // 倒计时更新（无论是否PC都显示）
-          if (this.autoUpdatePush > 0) {
-            setInterval(() => {
+          if (this.refreshInterval > 0) {
+            const timer = setInterval(() => {
               if (this.countdown > 0) {
                 this.countdown--;
+                this.updateCountdown();
               } else {
-                this.countdown = this.autoUpdatePush * 60;
+                // 倒计时结束
+                clearInterval(timer);
+                this.nextUpdateTime = '即将刷新...';
+                // 5秒后刷新页面
+                setTimeout(() => {
+                  location.reload();
+                }, 5000);
               }
-              this.updateCountdown();
             }, 1000);
           }
         };
         connect();
+
+
       },
       beforeDestroy() {
         // 在组件销毁前手动关闭 WebSocket 连接
@@ -475,26 +704,26 @@
       const date = new Date(dateStr.replace(/-/g, '/'));
       const now = new Date();
       const diff = Math.floor((now - date) / 1000);
-      
+
       if (diff < 60) return '刚刚';
       if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
       if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
       if (diff < 2592000) return Math.floor(diff / 86400) + ' 天前';
       return dateStr;
     }
-    
+
     // 更新页面上的时间显示
     document.querySelectorAll('time[data-time]').forEach(el => {
       el.textContent = timeAgo(el.getAttribute('data-time'));
     });
 
     // 处理服务端渲染条目的已读状态
-    (async function() {
+    (async function () {
       try {
         // 先从 localStorage 加载
         const saved = localStorage.getItem('rss-read-items');
         let readItems = saved ? new Set(JSON.parse(saved)) : new Set();
-        
+
         // 尝试从后端加载已读状态
         try {
           const response = await fetch('/api/read-state');
@@ -510,16 +739,16 @@
         } catch (e) {
           console.error('Failed to fetch read state from server:', e);
         }
-        
+
         // 恢复已读状态
         document.querySelectorAll('.seo-item').forEach(el => {
           const link = el.getAttribute('data-link');
           if (readItems.has(link)) {
             el.classList.add('item-read');
           }
-          
+
           // 添加点击事件
-          el.addEventListener('click', function() {
+          el.addEventListener('click', function () {
             if (readItems.has(link)) return;
             readItems.add(link);
             el.classList.add('item-read');
@@ -554,4 +783,5 @@
     }
   </script>
 </body>
+
 </html>

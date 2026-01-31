@@ -178,7 +178,6 @@ func (f FeedSource) IsFolder() bool {
 type Config struct {
 	Sources        []FeedSource   `json:"sources,omitempty"`
 	ReFresh        int            `json:"refresh"`
-	AutoUpdatePush int            `json:"autoUpdatePush"`
 	NightStartTime string         `json:"nightStartTime"`
 	NightEndTime   string         `json:"nightEndTime"`
 	// AI过滤配置

@@ -10,6 +10,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/mmcdole/gofeed"
+	"sync"
+	"fmt"
 )
 
 func UpdateFeeds() {
@@ -88,11 +90,11 @@ func GetCustomIconURL(rssURL string, customIcon string) string {
 	return GetFaviconURL(rssURL)
 }
 
-func UpdateFeed(url, formattedTime string) {
+func UpdateFeed(url, formattedTime string) error {
 	result, err := globals.Fp.ParseURL(url)
 	if err != nil {
 		log.Printf("Error fetching feed: %v | %v", url, err)
-		return
+		return err
 	}
 	
 	// 检查是否为榜单模式
@@ -100,11 +102,15 @@ func UpdateFeed(url, formattedTime string) {
 	
 	//feed内容无更新时无需更新缓存（非榜单模式下的快速判断）
 	if !isRanking {
-		if cache, ok := globals.DbMap[url]; ok &&
+		globals.Lock.RLock()
+		cache, ok := globals.DbMap[url]
+		globals.Lock.RUnlock()
+		
+		if ok &&
 			len(result.Items) > 0 &&
 			len(cache.Items) > 0 &&
 			result.Items[0].Link == cache.Items[0].Link {
-			return
+			return nil
 		}
 	}
 	
@@ -166,6 +172,7 @@ func UpdateFeed(url, formattedTime string) {
 	globals.Lock.Lock()
 	defer globals.Lock.Unlock()
 	globals.DbMap[url] = customFeed
+	return nil
 }
 
 // processRankingItems 处理榜单模式的条目：将新增条目放在前面，并清理过时的缓存
@@ -482,4 +489,58 @@ func WatchConfigFileChanges(filePath string) {
 	}()
 
 	select {}
+}
+
+// RefreshSingleFeed 刷新单个源或文件夹内的所有源
+func RefreshSingleFeed(link string) error {
+	formattedTime := time.Now().Format("2006-01-02 15:04:05")
+	log.Printf("手动刷新源: %s", link)
+	
+	// 查找匹配的源
+	for _, source := range globals.RssUrls.Sources {
+		if source.IsFolder() {
+			// 如果是文件夹，检查link是否匹配文件夹的name或任一子源
+			folderMatch := false
+			for _, feedUrl := range source.Urls {
+				if feedUrl.URL == link {
+					folderMatch = true
+					break
+				}
+			}
+			
+			// 如果匹配到文件夹中的任一源，刷新整个文件夹
+			// 处理 link 格式，文件夹的 link 可能是 "folder:" + Name
+			isFolderLink := link == "folder:"+source.Name
+			
+			if folderMatch || source.Name == link || isFolderLink {
+				log.Printf("刷新文件夹: %s", source.Name)
+				var wg sync.WaitGroup
+				errChan := make(chan error, len(source.Urls))
+				
+				for _, feedUrl := range source.Urls {
+					wg.Add(1)
+					go func(url string) {
+						defer wg.Done()
+						if err := UpdateFeed(url, formattedTime); err != nil {
+							errChan <- err
+						}
+					}(feedUrl.URL)
+				}
+				wg.Wait()
+				close(errChan)
+				
+				if len(errChan) > 0 {
+					return fmt.Errorf("feed update failed with errors")
+				}
+				return nil
+			}
+		} else if source.URL == link {
+			// 单个源直接刷新
+			log.Printf("刷新单个源: %s", link)
+			return UpdateFeed(source.URL, formattedTime)
+		}
+	}
+	
+	log.Printf("未找到匹配的源: %s", link)
+	return fmt.Errorf("feed not found")
 }

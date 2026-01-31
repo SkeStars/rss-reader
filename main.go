@@ -38,6 +38,7 @@ func main() {
 	http.HandleFunc("/api/mark-read", markReadHandler)
 	http.HandleFunc("/api/mark-unread", markUnreadHandler)
 	http.HandleFunc("/api/clear-read", clearReadHandler)
+	http.HandleFunc("/api/refresh-feed", refreshFeedHandler)
 
 	//加载静态文件
 	fs := http.FileServer(http.FS(globals.DirStatic))
@@ -87,15 +88,15 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 定义一个数据对象
 	data := struct {
-		Keywords       string
-		RssDataList    []models.Feed
-		DarkMode       bool
-		AutoUpdatePush int
+		Keywords    string
+		RssDataList []models.Feed
+		DarkMode    bool
+		ReFresh     int
 	}{
-		Keywords:       getKeywords(),
-		RssDataList:    utils.GetFeeds(),
-		DarkMode:       darkMode,
-		AutoUpdatePush: globals.RssUrls.AutoUpdatePush,
+		Keywords:    getKeywords(),
+		RssDataList: utils.GetFeeds(),
+		DarkMode:    darkMode,
+		ReFresh:     globals.RssUrls.ReFresh,
 	}
 
 	// 渲染模板并将结果写入响应
@@ -133,11 +134,19 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		//如果未配置则不自动更新
-		if globals.RssUrls.AutoUpdatePush == 0 {
-			return
-		}
-		time.Sleep(time.Duration(globals.RssUrls.AutoUpdatePush) * time.Minute)
+		//这里原本是自动推送逻辑，现在删除，改为只发送一次或者保持连接等待（如果需要的话）
+		//但是根据代码逻辑，for loop一直在跑。
+		//如果删除了AutoUpdatePush，我们应该怎么处理？
+		//观察原代码: sleep AutoUpdatePush minutes.
+		//如果删除了，这个loop就没有sleep了? 会死循环发送。
+		//所以应该把这个自动推送的loop逻辑改掉。
+		//也许只需要发送一次然后hold住连接? 或者等待别的信号?
+		//原逻辑是定时推送。
+		//现在的需求是页面自己倒计时刷新。
+		//所以WebSocket可能只需要保持连接或者作为被动通知通道(尽管目前没有实现被动通知)。
+		//我们可以让它Sleep一个很长的时间，或者改为接收模式。
+		//为了保持最小改动且符合"删除AutoUpdatePush功能"的需求，我们可以让它只发一次然后挂起等待客户端断开。
+		select {} 
 	}
 }
 
@@ -246,6 +255,37 @@ func clearReadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	utils.ClearAllReadState()
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
+}
+
+// refreshFeedHandler 刷新单个源
+func refreshFeedHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var req struct {
+		Link string `json:"link"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	if req.Link == "" {
+		http.Error(w, "Missing link", http.StatusBadRequest)
+		return
+	}
+	
+	// 触发立即更新指定的源
+	if err := utils.RefreshSingleFeed(req.Link); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"success":true}`))
