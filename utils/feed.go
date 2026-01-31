@@ -453,60 +453,85 @@ func WatchConfigFileChanges(filePath string) {
 	// 添加要监控的文件
 	err = watcher.Add(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("添加监控失败: %v", err)
 	}
 
 	// 启动一个 goroutine 来处理文件变化事件
 	go func() {
+		var debounceTimer *time.Timer
+		const debounceInterval = 500 * time.Millisecond
+
+		reloadFunc := func() {
+			log.Println("文件已修改，重新加载配置")
+
+			// 等待文件完全写入，然后重试读取配置
+			var err error
+			for i := 0; i < 3; i++ {
+				if i > 0 {
+					time.Sleep(100 * time.Millisecond)
+				}
+				err = globals.ReloadConfig()
+				if err == nil {
+					break
+				}
+				log.Printf("重载配置失败（尝试 %d/3）: %v", i+1, err)
+			}
+
+			if err != nil {
+				log.Printf("配置重载最终失败，保持使用旧配置: %v", err)
+				return
+			}
+
+			log.Println("配置重载成功")
+			formattedTime := time.Now().Format("2006-01-02 15:04:05")
+
+			for _, source := range globals.RssUrls.Sources {
+				if source.IsFolder() {
+					for _, feedUrl := range source.Urls {
+						go UpdateFeed(feedUrl.URL, formattedTime)
+					}
+				} else if source.URL != "" {
+					go UpdateFeed(source.URL, formattedTime)
+				}
+			}
+		}
+
 		for {
-			time.Sleep(30 * time.Second)
 			select {
 			case event, ok := <-watcher.Events:
 				if !ok {
-					log.Println("通道关闭1")
 					return
 				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Println("文件已修改，重新加载配置")
-					
-					// 等待文件完全写入，然后重试读取配置
-					var err error
-					for i := 0; i < 3; i++ {
-						if i > 0 {
-							time.Sleep(2000 * time.Millisecond)
-						}
-						err = globals.ReloadConfig()
-						if err == nil {
-							break
-						}
-						log.Printf("重载配置失败（尝试 %d/3）: %v", i+1, err)
-					}
-					
-					if err != nil {
-						log.Printf("配置重载最终失败，保持使用旧配置: %v", err)
-						continue // 继续监控，不退出程序
-					}
-					
-					log.Println("配置重载成功")
-					formattedTime := time.Now().Format("2006-01-02 15:04:05")
 
-					for _, source := range globals.RssUrls.Sources {
-						if source.IsFolder() {
-							for _, feedUrl := range source.Urls {
-								go UpdateFeed(feedUrl.URL, formattedTime)
-							}
-						} else if source.URL != "" {
-							go UpdateFeed(source.URL, formattedTime)
-						}
+				// 忽略无用事件
+				if event.Op&fsnotify.Chmod == fsnotify.Chmod {
+					continue
+				}
+
+				if event.Op&fsnotify.Write == fsnotify.Write ||
+					event.Op&fsnotify.Create == fsnotify.Create ||
+					event.Op&fsnotify.Rename == fsnotify.Rename {
+
+					// 如果是重命名或创建，尝试重新添加监控（针对某些原子写操作）
+					if event.Op&fsnotify.Rename == fsnotify.Rename || event.Op&fsnotify.Remove == fsnotify.Remove {
+						// 稍微延迟以确保新文件存在
+						go func() {
+							time.Sleep(100 * time.Millisecond)
+							watcher.Add(filePath)
+						}()
 					}
+
+					// 防抖动
+					if debounceTimer != nil {
+						debounceTimer.Stop()
+					}
+					debounceTimer = time.AfterFunc(debounceInterval, reloadFunc)
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
-					log.Println("通道关闭2")
 					return
 				}
 				log.Println("错误:", err)
-				return
 			}
 		}
 	}()
