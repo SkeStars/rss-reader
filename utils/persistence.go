@@ -388,6 +388,7 @@ func cleanupPersistentData() {
 }
 
 // collectValidArticleLinks 收集所有当前有效的文章链接
+// 包括所有RSS源返回的原始文章（过滤前），这样被过滤的文章缓存也会被保留
 func collectValidArticleLinks() map[string]bool {
 	validLinks := make(map[string]bool)
 	
@@ -395,8 +396,17 @@ func collectValidArticleLinks() map[string]bool {
 	defer globals.Lock.RUnlock()
 	
 	for _, feed := range globals.DbMap {
-		for _, item := range feed.Items {
-			validLinks[item.Link] = true
+		// 使用 AllItemLinks（过滤前的所有文章）而不是 Items（过滤后的）
+		// 这样可以保留被过滤文章的缓存，避免下次更新时重复AI判断
+		if len(feed.AllItemLinks) > 0 {
+			for _, link := range feed.AllItemLinks {
+				validLinks[link] = true
+			}
+		} else {
+			// 兼容旧数据：如果没有 AllItemLinks，使用 Items
+			for _, item := range feed.Items {
+				validLinks[item.Link] = true
+			}
 		}
 	}
 	
@@ -404,6 +414,8 @@ func collectValidArticleLinks() map[string]bool {
 }
 
 // cleanupFilterCache 清理过滤缓存中不再有效的条目
+// 注意：由于被过滤的文章也应该保留缓存（避免重复AI判断），
+// 这里的 validLinks 已经包含了 FilterCache 中的所有链接
 func cleanupFilterCache(validLinks map[string]bool) int {
 	globals.FilterCacheLock.Lock()
 	defer globals.FilterCacheLock.Unlock()

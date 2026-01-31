@@ -147,6 +147,12 @@ func UpdateFeed(url, formattedTime string) {
 		filteredItems = FilterItems(allItems, url)
 	}
 
+	// 记录过滤前的所有文章链接，用于清理时判断
+	allItemLinks := make([]string, 0, len(allItems))
+	for _, item := range allItems {
+		allItemLinks = append(allItemLinks, item.Link)
+	}
+
 	customFeed := models.Feed{
 		Title:         result.Title,
 		Link:          url,
@@ -154,6 +160,7 @@ func UpdateFeed(url, formattedTime string) {
 		Custom:        map[string]string{"lastupdate": formattedTime},
 		Items:         filteredItems,
 		FilteredCount: originalCount - len(filteredItems),
+		AllItemLinks:  allItemLinks,
 	}
 
 	globals.Lock.Lock()

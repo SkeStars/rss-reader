@@ -8,7 +8,8 @@ type Feed struct {
 	Items    []Item            `json:"items,omitempty"`
 	IsFolder bool              `json:"isFolder,omitempty"` // 是否为文件夹类型
 	// AI过滤统计
-	FilteredCount int `json:"filteredCount,omitempty"` // 被过滤的文章数量
+	FilteredCount int      `json:"filteredCount,omitempty"` // 被过滤的文章数量
+	AllItemLinks  []string `json:"-"`                      // 过滤前的所有文章链接（不输出到JSON，仅用于内部清理）
 }
 
 type Item struct {
