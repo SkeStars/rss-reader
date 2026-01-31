@@ -110,7 +110,7 @@
           flex-shrink: 0;
           height: 1.2em;
           align-items: center;
-          margin-top: 5px;
+          margin-top: 4px;
         }
 
         @media only screen and (min-width: 1200px) {
@@ -761,8 +761,8 @@
           .el-overlay-dialog {
             display: flex !important;
             justify-content: center !important;
-            align-items: flex-start !important;
-            padding-top: 15vh !important;
+            align-items: center !important;
+            padding-top: 0 !important;
           }
 
           .password-dialog.el-dialog {
@@ -793,11 +793,14 @@
           }
 
           .dialog-footer {
+            display: flex;
             flex-direction: column;
+            gap: 12px;
           }
 
           .dialog-footer .el-button {
             width: 100%;
+            height: 44px !important;
           }
         }
       </style>
@@ -876,7 +879,7 @@
         <el-tabs v-model="activeTab">
           <!-- Feeds Tab -->
           <el-tab-pane label="订阅源管理" name="feeds">
-            <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
               <el-button type="primary" @click="addFeed">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
                   style="width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;">
