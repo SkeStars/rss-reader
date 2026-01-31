@@ -10,6 +10,7 @@ type Feed struct {
 	// AI过滤统计
 	FilteredCount int      `json:"filteredCount,omitempty"` // 被过滤的文章数量
 	AllItemLinks  []string `json:"-"`                      // 过滤前的所有文章链接（不输出到JSON，仅用于内部清理）
+	Group         string   `json:"group,omitempty"`        // 分组名称
 }
 
 type Item struct {

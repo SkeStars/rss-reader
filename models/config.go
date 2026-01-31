@@ -155,6 +155,8 @@ type FeedSource struct {
 	RankingMode bool `json:"rankingMode,omitempty"`
 	// 最大读取条目数，超过此数量的条目将不会被加载（0或不设置表示不限制）
 	MaxItems int `json:"maxItems,omitempty"`
+	// 分组名称，默认为"关注"
+	Group string `json:"group,omitempty"`
 }
 
 // FeedURL 表示文件夹内的单个RSS源

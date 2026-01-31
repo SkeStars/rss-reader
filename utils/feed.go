@@ -313,10 +313,17 @@ func GetFeeds() []models.Feed {
 	feeds := make([]models.Feed, 0)
 
 	for _, source := range globals.RssUrls.Sources {
+		// 获取分组名称，默认为"关注"
+		group := source.Group
+		if group == "" {
+			group = "关注"
+		}
+
 		if source.IsFolder() {
 			// 文件夹类型：聚合多个源
 			folderFeed := buildFolderFeed(source)
 			if folderFeed != nil {
+				folderFeed.Group = group
 				feeds = append(feeds, *folderFeed)
 			}
 		} else if source.URL != "" {
@@ -337,6 +344,7 @@ func GetFeeds() []models.Feed {
 					Icon:   source.Icon,
 					Custom: map[string]string{"lastupdate": "加载失败，请稍后重试"},
 					Items:  []models.Item{},
+					Group:  group,
 				})
 				continue
 			}
@@ -348,6 +356,7 @@ func GetFeeds() []models.Feed {
 			if source.Icon != "" {
 				cache.Icon = source.Icon
 			}
+			cache.Group = group
 			feeds = append(feeds, cache)
 		}
 	}

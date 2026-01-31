@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"rss-reader/globals"
 	"rss-reader/models"
+	"sort"
 	"syscall"
 
 	"rss-reader/utils"
@@ -69,6 +70,10 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		"inc": func(i int) int {
 			return i + 1
 		},
+		"json": func(v interface{}) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
 	}
 	// 加载模板文件
 	tmpl, err := tmplInstance.Funcs(funcMap).ParseFS(globals.DirStatic, "static/index.html")
@@ -92,11 +97,13 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		RssDataList []models.Feed
 		DarkMode    bool
 		ReFresh     int
+		Groups      []string
 	}{
 		Keywords:    getKeywords(),
 		RssDataList: utils.GetFeeds(),
 		DarkMode:    darkMode,
 		ReFresh:     globals.RssUrls.ReFresh,
+		Groups:      getGroups(utils.GetFeeds()),
 	}
 
 	// 渲染模板并将结果写入响应
@@ -168,6 +175,33 @@ func getFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(feeds)
+}
+
+func getGroups(feeds []models.Feed) []string {
+	groupSet := make(map[string]struct{})
+	for _, feed := range feeds {
+		if feed.Group != "" {
+			groupSet[feed.Group] = struct{}{}
+		} else {
+			groupSet["关注"] = struct{}{}
+		}
+	}
+	
+	groups := make([]string, 0, len(groupSet))
+	hasFocus := false
+	for g := range groupSet {
+		if g == "关注" {
+			hasFocus = true
+			continue
+		}
+		groups = append(groups, g)
+	}
+	sort.Strings(groups)
+	
+	if hasFocus {
+		groups = append([]string{"关注"}, groups...)
+	}
+	return groups
 }
 
 // readStateHandler 获取已读状态
