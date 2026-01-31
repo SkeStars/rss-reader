@@ -462,3 +462,22 @@ func cleanupReadState(validLinks map[string]bool) int {
 	
 	return cleaned
 }
+
+// SaveConfig 保存配置到 config.json
+func SaveConfig(config models.Config) error {
+	data, err := json.MarshalIndent(config, "", "    ")
+	if err != nil {
+		return err
+	}
+	
+	// Docker Bind Mount 不支持 atomic rename 覆盖文件，必须直接写入
+	// 使用 O_TRUNC 清空原有内容
+	f, err := os.OpenFile("config.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	
+	_, err = f.Write(data)
+	return err
+}

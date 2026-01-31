@@ -429,6 +429,71 @@
         [v-cloak] {
           display: none !important;
         }
+
+        .settings-btn {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 2000;
+          font-size: 24px;
+          cursor: pointer;
+          color: #909399;
+          transition: color 0.3s;
+        }
+
+        .settings-btn:hover {
+          color: #409EFF;
+        }
+
+        /* Password Modal Styling */
+        .password-dialog .el-dialog {
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .password-dialog .el-dialog__header {
+          padding: 20px;
+          background-color: #f5f7fa;
+          border-bottom: 1px solid #e4e7ed;
+        }
+
+        .password-dialog .el-dialog__title {
+          font-weight: 600;
+          color: #303133;
+        }
+
+        .password-dialog .el-dialog__body {
+          padding: 30px 25px;
+        }
+
+        .password-icon-container {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+
+        .password-icon {
+          font-size: 40px;
+          color: #409EFF;
+          opacity: 0.8;
+        }
+
+        .password-input-wrapper {
+          margin-top: 10px;
+        }
+
+        /* Operation Column Styling */
+        .operation-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+          justify-content: flex-start;
+          align-items: center;
+        }
+
+        .op-btn {
+          margin-left: 0 !important;
+          padding: 4px 8px;
+        }
       </style>
 </head>
 
@@ -437,6 +502,254 @@
     <div class="loading-spinner"></div>
   </div>
   <div id="app" v-cloak>
+    <div class="settings-btn" @click="openSettings">
+      <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor">
+        <path
+          d="M458.5 906.5c-6.8-21.7-14.7-43-23.8-63.7-13.8 3.2-28 4.9-42.5 4.9-88.3 0-163.7-56.1-192.3-134.8-5.3-14.7-8.2-30.5-8.2-46.9 0-77.9 63.1-141 141-141 18.2 0 35.6 3.4 51.6 9.7 13.9-35.3 33.3-68.5 57.3-98.7-27.1-12.7-57.5-19.8-89.6-19.8-115.8 0-209.7 93.9-209.7 209.7 0 115.8 93.9 209.7 209.7 209.7 41 0 79.4-11.7 112.5-32 3.8-12.8 7.3-25.9 10.4-39.2l-16.4 42.1z m364.6-200c-25-68.9-90.6-118-167.9-118-20.6 0-40.3 3.5-58.6 9.8-12.7-26.6-28.8-51.5-47.5-74.4 34.6-14.9 72.8-23.2 113.1-23.2 153.3 0 277.6 124.3 277.6 277.6 0 153.3-124.3 277.6-277.6 277.6-43.1 0-83.9-9.5-120.6-26.4 12.3-25.6 22-52.4 28.7-80.2 17.5 5.8 36.1 9 55.4 9 96.6 0 177.3-68.8 197.4-160.7z m-346.5-62.6c11.6 19.3 20.8 40.1 27.2 62.1 6.4 22 9.6 44.9 9.6 68.3 0 22.9-3.2 45.2-9.2 66.8-6.1 21.6-15 41.9-26.3 60.8-11.3 18.9-25.1 35.8-41 50.5-15.9 14.7-33.8 26.8-53.3 36-19.5 9.2-40.6 15.6-62.8 19-22.1 3.4-44.9 4.3-67.9 2.5-22.9-1.8-45.3-6.8-66.8-14.8-21.5-8-41.5-19.1-59.7-33.1L523 490.6c19.3 12.5 36.5 28 51.3 46.1 14.8 18.1 26.9 38.6 36 61.1z M628.7 348.8c42.8 0 77.5 34.7 77.5 77.5s-34.7 77.5-77.5 77.5-77.5-34.7-77.5-77.5 34.7-77.5 77.5-77.5z">
+        </path>
+      </svg>
+    </div>
+
+    <!-- Password Modal -->
+    <el-dialog title="身份验证" v-model="showPasswordModal" width="360px" center custom-class="password-dialog"
+      :close-on-click-modal="false">
+      <div class="password-icon-container">
+        <div class="password-icon">
+          <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor">
+            <path
+              d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z">
+            </path>
+            <path
+              d="M685.6 343.3c-23.8-26.6-57.5-43.3-95.6-43.3-79.5 0-144 64.5-144 144v56H400v-56c0-57.1 42.9-104.5 98.1-111.4 1.3-3.6 2.3-7.5 2.3-11.6 0-19.9-16.1-36-36-36s-36 16.1-36 36c0 14.1 8 26.5 19.8 32.5C370.4 366.4 320 429.2 320 500v56h-24v176h432V556h-24v-56c0-62-36.9-115.3-89.8-140.2zM488 500c0-57.3 46.7-104 104-104s104 46.7 104 104v56H488v-56zm200 192H336V596h352v96z">
+            </path>
+          </svg>
+        </div>
+      </div>
+      <div class="password-input-wrapper">
+        <el-input v-model="passwordInput" placeholder="请输入访问密码" show-password @keyup.enter="checkPassword"
+          prefix-icon="el-icon-lock" size="large"></el-input>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showPasswordModal = false" style="width: 45%">取消</el-button>
+        <el-button type="primary" @click="checkPassword" style="width: 45%" :disabled="!passwordInput">解锁</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- Config Modal -->
+    <el-dialog title="系统配置" v-model="showConfigModal" fullscreen :show-close="true">
+      <div v-if="config" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+        <el-tabs v-model="activeTab">
+          <!-- Feeds Tab -->
+          <el-tab-pane label="订阅源管理" name="feeds">
+            <div style="margin-bottom: 20px;">
+              <el-button type="primary" icon="el-icon-plus" @click="addFeed">添加订阅源</el-button>
+              <el-button type="success" icon="el-icon-folder-add" @click="addFolder">添加文件夹</el-button>
+            </div>
+
+            <el-table :data="config.sources" style="width: 100%" row-key="_id" border default-expand-all>
+              <el-table-column prop="name" label="名称" width="200">
+                <template #default="scope">
+                  <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
+                  <span v-else>{{ scope.row.name || (scope.row.urls ? '文件夹' : '未命名') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="url" label="URL" min-width="300">
+                <template #default="scope">
+                  <el-input v-if="scope.row.editMode && !scope.row.urls" v-model="scope.row.url"
+                    size="small"></el-input>
+                  <span v-else>{{ scope.row.url }}</span>
+                  <div v-if="scope.row.urls">
+                    <el-tag size="mini" type="info">包含 {{ scope.row.urls.length }} 个源</el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="group" label="分组" width="150">
+                <template #default="scope">
+                  <el-input v-if="scope.row.editMode" v-model="scope.row.group" size="small"
+                    placeholder="默认: 关注"></el-input>
+                  <span v-else>{{ scope.row.group || '关注' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="300" fixed="right">
+                <template #default="scope">
+                  <div class="operation-container">
+                    <el-button-group>
+                      <el-button type="default" size="small" class="op-btn" @click="moveSourceUp(scope.$index)"
+                        :disabled="scope.$index === 0" title="上移">↑</el-button>
+                      <el-button type="default" size="small" class="op-btn" @click="moveSourceDown(scope.$index)"
+                        :disabled="scope.$index === config.sources.length - 1" title="下移">↓</el-button>
+                    </el-button-group>
+
+                    <el-button v-if="!scope.row.editMode" type="primary" size="small" plain class="op-btn"
+                      @click="enableEdit(scope.row)">编辑</el-button>
+                    <el-button v-else type="success" size="small" class="op-btn"
+                      @click="saveEdit(scope.row)">保存</el-button>
+
+                    <el-button type="info" size="small" plain class="op-btn"
+                      @click="openFeedSettings(scope.row)">设置</el-button>
+
+                    <el-button v-if="scope.row.urls" type="warning" size="small" plain class="op-btn"
+                      @click="manageFolder(scope.row)">内容</el-button>
+
+                    <el-button type="danger" size="small" plain class="op-btn"
+                      @click="removeSource(scope.$index)">×</el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+
+          <!-- General Settings Tab -->
+          <el-tab-pane label="基础设置" name="general">
+            <el-form label-width="120px">
+              <el-form-item label="自动刷新(分钟)">
+                <el-input-number v-model="config.refresh" :min="0" :max="1440"></el-input-number>
+                <div class="tip">设为0则关闭自动刷新</div>
+              </el-form-item>
+              <el-form-item label="夜间模式开始">
+                <el-time-picker v-model="nightStartTime" placeholder="选择时间" value-format="HH:mm:ss"></el-time-picker>
+              </el-form-item>
+              <el-form-item label="夜间模式结束">
+                <el-time-picker v-model="nightEndTime" placeholder="选择时间" value-format="HH:mm:ss"></el-time-picker>
+              </el-form-item>
+              <el-form-item label="设置密码">
+                <el-input v-model="config.password" show-password placeholder="留空则不设置密码"></el-input>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+
+          <!-- AI Filter Tab -->
+          <el-tab-pane label="AI 过滤" name="ai">
+            <el-form label-width="120px">
+              <el-form-item label="启用 AI 过滤">
+                <el-switch v-model="config.aiFilter.enabled"></el-switch>
+              </el-form-item>
+              <template v-if="config.aiFilter.enabled">
+                <el-form-item label="API Key">
+                  <el-input v-model="config.aiFilter.apiKey" show-password></el-input>
+                </el-form-item>
+                <el-form-item label="API Base">
+                  <el-input v-model="config.aiFilter.apiBase"
+                    placeholder="默认: https://ark.cn-beijing.volces.com/api/v3"></el-input>
+                </el-form-item>
+                <el-form-item label="模型">
+                  <el-input v-model="config.aiFilter.model" placeholder="默认: doubao-seed-1.8"></el-input>
+                </el-form-item>
+                <el-form-item label="阈值 (0-1)">
+                  <el-slider v-model="config.aiFilter.threshold" :min="0" :max="1" :step="0.05" show-input></el-slider>
+                  <div class="tip">置信度高于此值将被过滤</div>
+                </el-form-item>
+                <el-form-item label="系统提示词">
+                  <el-input type="textarea" :rows="4" v-model="config.aiFilter.systemPrompt"></el-input>
+                </el-form-item>
+              </template>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showConfigModal = false">关闭</el-button>
+        <el-button type="primary" @click="saveConfig">保存并应用</el-button>
+      </span>
+
+      <!-- Folder Management Dialog -->
+      <el-dialog title="文件夹内容管理" v-model="showFolderModal" width="80%" append-to-body>
+        <div v-if="currentFolder">
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="addFeedToFolder"
+            style="margin-bottom: 10px;">添加源</el-button>
+          <el-table :data="currentFolder.urls" border>
+            <el-table-column prop="name" label="名称">
+              <template #default="scope">
+                <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
+                <span v-else>{{ scope.row.name }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="url" label="URL">
+              <template #default="scope">
+                <el-input v-if="scope.row.editMode" v-model="scope.row.url" size="small"></el-input>
+                <span v-else>{{ scope.row.url }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="240">
+              <template #default="scope">
+                <div class="operation-container">
+                  <el-button-group>
+                    <el-button type="default" size="small" class="op-btn" @click="moveFeedInFolderUp(scope.$index)"
+                      :disabled="scope.$index === 0" title="上移">↑</el-button>
+                    <el-button type="default" size="small" class="op-btn" @click="moveFeedInFolderDown(scope.$index)"
+                      :disabled="scope.$index === currentFolder.urls.length - 1" title="下移">↓</el-button>
+                  </el-button-group>
+
+                  <el-button v-if="!scope.row.editMode" type="primary" size="small" plain class="op-btn"
+                    @click="enableEdit(scope.row)">编辑</el-button>
+                  <el-button v-else type="success" size="small" class="op-btn"
+                    @click="saveEdit(scope.row)">保存</el-button>
+
+                  <el-button type="info" size="small" plain class="op-btn"
+                    @click="openFeedSettings(scope.row)">设置</el-button>
+
+                  <el-button type="danger" size="small" plain class="op-btn"
+                    @click="removeFeedFromFolder(scope.$index)">×</el-button>
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-dialog>
+    </el-dialog>
+
+    <!-- Feed Settings Modal -->
+    <el-dialog title="源高级设置" v-model="showFeedSettingsModal" width="600px" append-to-body>
+      <div v-if="currentEditingFeed">
+        <el-form label-width="120px">
+          <el-form-item label="图标 URL">
+            <el-input v-model="currentEditingFeed.icon" placeholder="https://..."></el-input>
+          </el-form-item>
+
+          <el-divider content-position="left">AI 过滤策略</el-divider>
+
+          <el-form-item label="启用状态">
+            <el-radio-group v-model="tempFilterEnabled">
+              <el-radio label="default">默认(跟随全局)</el-radio>
+              <el-radio label="true">强制启用</el-radio>
+              <el-radio label="false">强制禁用</el-radio>
+            </el-radio-group>
+          </el-form-item>
+
+          <template v-if="tempFilterEnabled !== 'false'">
+            <el-form-item label="自定义阈值">
+              <el-slider v-model="tempFilterSettings.threshold" :min="0" :max="1" :step="0.05" show-input></el-slider>
+              <div class="tip">置信度高于此值将被过滤 (0表示跟随全局)</div>
+            </el-form-item>
+
+            <el-form-item label="自定义提示词">
+              <el-input type="textarea" :rows="3" v-model="tempFilterSettings.customPrompt"
+                placeholder="留空则使用全局提示词"></el-input>
+            </el-form-item>
+
+            <el-form-item label="过滤关键词">
+              <el-select v-model="tempFilterSettings.filterKeywords" multiple filterable allow-create
+                default-first-option placeholder="输入关键词并回车">
+              </el-select>
+              <div class="tip">包含这些词的文章将被过滤</div>
+            </el-form-item>
+
+            <el-form-item label="保留关键词">
+              <el-select v-model="tempFilterSettings.keepKeywords" multiple filterable allow-create default-first-option
+                placeholder="输入关键词并回车">
+              </el-select>
+              <div class="tip">包含这些词的文章将被保留(优先级最高)</div>
+            </el-form-item>
+          </template>
+        </el-form>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showFeedSettingsModal = false">取消</el-button>
+        <el-button type="primary" @click="saveFeedSettings">确定</el-button>
+      </span>
+    </el-dialog>
+    </el-dialog>
+
     <el-container>
 
       <el-main v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="拼命加载中">
@@ -552,11 +865,32 @@
           groups: << if .Groups >><< .Groups | json >><< else >> ['关注'] << end >>,
           showSEOFlag: true,
           fullscreenLoading: true,
-          countdown: << .ReFresh >> * 60,
+          countdown: 0,
+          targetTimeStr: '<< .NextUpdateTime >>',
           isPc: true,
           refreshInterval: << .ReFresh >>,
           nextUpdateTime: '',
           readItems: new Set(),
+
+          // Config related
+          showPasswordModal: false,
+          showConfigModal: false,
+          showFolderModal: false,
+          passwordInput: '',
+          config: null,
+          activeTab: 'feeds',
+          nightStartTime: '',
+          nightEndTime: '',
+          currentFolder: null,
+          showFeedSettingsModal: false,
+          currentEditingFeed: null,
+          tempFilterEnabled: 'default', // 'default', 'true', 'false'
+          tempFilterSettings: {
+            threshold: 0,
+            customPrompt: '',
+            filterKeywords: [],
+            keepKeywords: []
+          },
         };
       },
       computed: {
@@ -748,6 +1082,7 @@
             console.error('Failed to save read items:', e);
           }
         },
+
         handleScroll(e) {
           const container = e.target;
           container.classList.add('scrolling');
@@ -755,12 +1090,246 @@
           container.scrollTimeout = setTimeout(() => {
             container.classList.remove('scrolling');
           }, 1000);
-        }
+        },
+
+        // Settings Methods
+        openSettings() {
+          // Check if password needed
+          fetch('/api/check-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: '' })
+          }).then(async res => {
+            if (res.ok) {
+              // No password or empty password
+              this.fetchConfig();
+            } else {
+              this.showPasswordModal = true;
+              this.passwordInput = '';
+            }
+          });
+        },
+        async checkPassword() {
+          const res = await fetch('/api/check-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: this.passwordInput })
+          });
+          if (res.ok) {
+            this.showPasswordModal = false;
+            this.fetchConfig(this.passwordInput);
+          } else {
+            this.$message.error('密码错误');
+          }
+        },
+        async fetchConfig(password = '') {
+          try {
+            const res = await fetch('/api/get-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password })
+            });
+            if (res.ok) {
+              this.config = await res.json();
+              // Ensure sources is initialized
+              if (!this.config.sources) {
+                this.config.sources = [];
+              }
+              // Give every source a unique ID for UI handling
+              if (this.config.sources) {
+                this.config.sources.forEach(s => {
+                  s._id = Date.now() + Math.random();
+                  if (s.urls) {
+                    s.urls.forEach(u => u._id = Date.now() + Math.random());
+                  }
+                });
+              }
+              if (!this.config.aiFilter) this.config.aiFilter = { enabled: false };
+              this.nightStartTime = this.config.nightStartTime;
+              this.nightEndTime = this.config.nightEndTime;
+              this.showConfigModal = true;
+            } else {
+              this.$message.error('获取配置失败');
+            }
+          } catch (e) {
+            this.$message.error('网络错误');
+          }
+        },
+        async saveConfig() {
+          try {
+            // UPDATE TIME
+            this.config.nightStartTime = this.nightStartTime;
+            this.config.nightEndTime = this.nightEndTime;
+
+            const res = await fetch('/api/save-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                password: this.passwordInput, // Use the one entered
+                config: this.config
+              })
+            });
+
+            if (res.ok) {
+              this.$message.success('保存成功，即将刷新页面');
+              this.showConfigModal = false;
+              setTimeout(() => location.reload(), 1000);
+            } else {
+              this.$message.error('保存失败');
+            }
+          } catch (e) {
+            this.$message.error('保存出错');
+          }
+        },
+        addFeed() {
+          this.config.sources.unshift({
+            _id: Date.now() + Math.random(),
+            name: '新建源',
+            url: 'http://',
+            editMode: true
+          });
+        },
+        addFolder() {
+          this.config.sources.unshift({
+            _id: Date.now() + Math.random(),
+            name: '新建文件夹',
+            urls: [],
+            editMode: true
+          });
+        },
+        removeSource(index) {
+          this.$confirm('确定删除该订阅源吗?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.config.sources.splice(index, 1);
+          }).catch(() => { });
+        },
+        enableEdit(row) {
+          row.editMode = true;
+        },
+        saveEdit(row) {
+          row.editMode = false;
+        },
+        manageFolder(row) {
+          this.currentFolder = row;
+          this.showFolderModal = true;
+        },
+        addFeedToFolder() {
+          if (!this.currentFolder.urls) this.currentFolder.urls = [];
+          this.currentFolder.urls.push({
+            _id: Date.now() + Math.random(),
+            name: '新源',
+            url: 'http://',
+            editMode: true
+          });
+        },
+        removeFeedFromFolder(index) {
+          this.currentFolder.urls.splice(index, 1);
+        },
+        openFeedSettings(row) {
+          this.currentEditingFeed = row;
+          // Init temp vars from row
+          if (!row.filter) {
+            this.tempFilterEnabled = 'default';
+            this.tempFilterSettings = {
+              threshold: 0,
+              customPrompt: '',
+              filterKeywords: [],
+              keepKeywords: []
+            };
+          } else {
+            if (row.filter.enabled === true) this.tempFilterEnabled = 'true';
+            else if (row.filter.enabled === false) this.tempFilterEnabled = 'false';
+            else this.tempFilterEnabled = 'default';
+
+            this.tempFilterSettings = {
+              threshold: row.filter.threshold || 0,
+              customPrompt: row.filter.customPrompt || '',
+              filterKeywords: row.filter.filterKeywords ? [...row.filter.filterKeywords] : [],
+              keepKeywords: row.filter.keepKeywords ? [...row.filter.keepKeywords] : []
+            };
+          }
+          this.showFeedSettingsModal = true;
+        },
+        saveFeedSettings() {
+          if (!this.currentEditingFeed) return;
+
+          // Construct filter object
+          let filter = this.currentEditingFeed.filter || {};
+
+          // Enabled state
+          if (this.tempFilterEnabled === 'true') filter.enabled = true;
+          else if (this.tempFilterEnabled === 'false') filter.enabled = false;
+          else filter.enabled = undefined; // Remove property for default
+
+          // Other settings
+          if (this.tempFilterEnabled !== 'false') {
+            if (this.tempFilterSettings.threshold > 0) filter.threshold = this.tempFilterSettings.threshold;
+            else filter.threshold = undefined;
+
+            if (this.tempFilterSettings.customPrompt) filter.customPrompt = this.tempFilterSettings.customPrompt;
+            else filter.customPrompt = undefined;
+
+            if (this.tempFilterSettings.filterKeywords.length > 0) filter.filterKeywords = this.tempFilterSettings.filterKeywords;
+            else filter.filterKeywords = undefined;
+
+            if (this.tempFilterSettings.keepKeywords.length > 0) filter.keepKeywords = this.tempFilterSettings.keepKeywords;
+            else filter.keepKeywords = undefined;
+          }
+
+          // Check if filter object is empty (all undefined)
+          const isEmpty = Object.keys(filter).every(k => filter[k] === undefined);
+
+          if (isEmpty) {
+            this.currentEditingFeed.filter = undefined;
+          } else {
+            this.currentEditingFeed.filter = filter;
+          }
+
+          this.showFeedSettingsModal = false;
+        },
+        moveSourceUp(index) {
+          if (index > 0) {
+            const item = this.config.sources.splice(index, 1)[0];
+            this.config.sources.splice(index - 1, 0, item);
+          }
+        },
+        moveSourceDown(index) {
+          if (index < this.config.sources.length - 1) {
+            const item = this.config.sources.splice(index, 1)[0];
+            this.config.sources.splice(index + 1, 0, item);
+          }
+        },
+        moveFeedInFolderUp(index) {
+          if (index > 0) {
+            const item = this.currentFolder.urls.splice(index, 1)[0];
+            this.currentFolder.urls.splice(index - 1, 0, item);
+          }
+        },
+        moveFeedInFolderDown(index) {
+          if (index < this.currentFolder.urls.length - 1) {
+            const item = this.currentFolder.urls.splice(index, 1)[0];
+            this.currentFolder.urls.splice(index + 1, 0, item);
+          }
+        },
       },
       async created() {
         this.fullscreenLoading = false;
         // 使用媒体查询判断设备类型
         this.isPc = !window.matchMedia('(max-width: 767px)').matches;
+
+        // Calculate countdown based on target time
+        if (this.targetTimeStr && this.refreshInterval > 0) {
+          const target = new Date(this.targetTimeStr);
+          const now = new Date();
+          let diff = Math.floor((target - now) / 1000);
+          if (diff < 0) diff = 0;
+          this.countdown = diff;
+        } else if (this.refreshInterval > 0) {
+          this.countdown = this.refreshInterval * 60;
+        }
         // 初始化倒计时显示
         this.updateCountdown();
         // 加载已读状态

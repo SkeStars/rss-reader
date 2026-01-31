@@ -15,8 +15,18 @@ import (
 )
 
 func UpdateFeeds() {
+	if globals.RssUrls.ReFresh <= 0 {
+		return
+	}
+	refreshDuration := time.Duration(globals.RssUrls.ReFresh) * time.Minute
+	
+    // Set initial next update time
+	globals.Lock.Lock()
+    globals.NextUpdateTime = time.Now().Add(refreshDuration)
+	globals.Lock.Unlock()
+
 	var (
-		tick = time.Tick(time.Duration(globals.RssUrls.ReFresh) * time.Minute)
+		tick = time.Tick(refreshDuration)
 	)
 	for {
 		formattedTime := time.Now().Format("2006-01-02 15:04:05")
@@ -30,6 +40,10 @@ func UpdateFeeds() {
 			}
 		}
 		<-tick
+		
+		globals.Lock.Lock()
+		globals.NextUpdateTime = time.Now().Add(refreshDuration)
+		globals.Lock.Unlock()
 	}
 }
 

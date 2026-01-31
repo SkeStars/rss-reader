@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"rss-reader/models"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/mmcdole/gofeed"
@@ -30,6 +31,9 @@ var (
 	// 已读状态: map[文章Link] -> 已读时间戳
 	ReadState     map[string]int64
 	ReadStateLock sync.RWMutex
+
+	// 下次更新时间
+	NextUpdateTime time.Time
 )
 
 // Init 首次初始化，创建所有缓存

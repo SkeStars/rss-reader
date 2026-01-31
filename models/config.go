@@ -182,6 +182,8 @@ type Config struct {
 	ReFresh        int            `json:"refresh"`
 	NightStartTime string         `json:"nightStartTime"`
 	NightEndTime   string         `json:"nightEndTime"`
+	// Settings password
+	Password string `json:"password,omitempty"`
 	// AI过滤配置
 	AIFilter AIFilterConfig `json:"aiFilter,omitempty"`
 }

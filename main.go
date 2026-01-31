@@ -40,6 +40,9 @@ func main() {
 	http.HandleFunc("/api/mark-unread", markUnreadHandler)
 	http.HandleFunc("/api/clear-read", clearReadHandler)
 	http.HandleFunc("/api/refresh-feed", refreshFeedHandler)
+	http.HandleFunc("/api/check-password", checkPasswordHandler)
+	http.HandleFunc("/api/get-config", getConfigHandler)
+	http.HandleFunc("/api/save-config", saveConfigHandler)
 
 	//加载静态文件
 	fs := http.FileServer(http.FS(globals.DirStatic))
@@ -91,19 +94,26 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 获取下次更新时间
+	globals.Lock.RLock()
+	nextUpdate := globals.NextUpdateTime
+	globals.Lock.RUnlock()
+
 	// 定义一个数据对象
 	data := struct {
-		Keywords    string
-		RssDataList []models.Feed
-		DarkMode    bool
-		ReFresh     int
-		Groups      []string
+		Keywords       string
+		RssDataList    []models.Feed
+		DarkMode       bool
+		ReFresh        int
+		Groups         []string
+		NextUpdateTime string
 	}{
-		Keywords:    getKeywords(),
-		RssDataList: utils.GetFeeds(),
-		DarkMode:    darkMode,
-		ReFresh:     globals.RssUrls.ReFresh,
-		Groups:      getGroups(utils.GetFeeds()),
+		Keywords:       getKeywords(),
+		RssDataList:    utils.GetFeeds(),
+		DarkMode:       darkMode,
+		ReFresh:        globals.RssUrls.ReFresh,
+		Groups:         getGroups(utils.GetFeeds()),
+		NextUpdateTime: nextUpdate.Format(time.RFC3339),
 	}
 
 	// 渲染模板并将结果写入响应
@@ -321,6 +331,97 @@ func refreshFeedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"success":true}`))
+}
+
+// checkPasswordHandler 验证密码
+func checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if globals.RssUrls.Password == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"success":true}`))
+		return
+	}
+
+	if req.Password == globals.RssUrls.Password {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"success":true}`))
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"success":false, "message":"Password incorrect"}`))
+	}
+}
+
+// getConfigHandler 获取当前配置
+func getConfigHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var req struct {
+		Password string `json:"password"`
+	}
+	
+	if globals.RssUrls.Password != "" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		if req.Password != globals.RssUrls.Password {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(globals.RssUrls)
+}
+
+// saveConfigHandler 保存配置
+func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Password string        `json:"password"`
+		Config   models.Config `json:"config"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// 验证旧密码
+	if globals.RssUrls.Password != "" && req.Password != globals.RssUrls.Password {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := utils.SaveConfig(req.Config); err != nil {
+		log.Printf("Save config failed: %v", err)
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"success":true}`))
 }
