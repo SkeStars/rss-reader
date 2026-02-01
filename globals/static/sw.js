@@ -5,7 +5,8 @@ const urlsToCache = [
   '/static/dark-mode.css',
   '/static/vue.global.prod.js',
   '/static/index.full.min.js',
-  '/static/favicon.svg'
+  '/static/favicon.svg',
+  '/static/logo.svg'
 ];
 
 // 安装 Service Worker
