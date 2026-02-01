@@ -4,9 +4,8 @@
   "description": "RSS Reader，一个将订阅信息聚合展示的开源web工具",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#1a1a1a",
   "theme_color": "#F5F5F5",
-  "orientation": "any",
   "icons": [
     {
       "src": "static/icon-192.svg",

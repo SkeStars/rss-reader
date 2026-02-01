@@ -18,8 +18,8 @@ WORKDIR /app
 
 EXPOSE 8080
 
-# 设置时区
-RUN apk add --no-cache tzdata
+# 设置时区，安装脚本处理所需工具
+RUN apk add --no-cache tzdata jq bash
 ENV TZ=Asia/Shanghai
 
 ENTRYPOINT ["./rss-reader"]

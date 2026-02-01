@@ -139,6 +139,34 @@ func (f FilterStrategy) GetThreshold(globalThreshold float64) float64 {
 	return globalThreshold
 }
 
+// PostProcessConfig 后处理配置
+type PostProcessConfig struct {
+	// 是否启用后处理
+	Enabled bool `json:"enabled"`
+	// 处理模式: "ai" 或 "script"
+	Mode string `json:"mode,omitempty"`
+	// AI模式的提示词
+	Prompt string `json:"prompt,omitempty"`
+	// 脚本模式的脚本路径（二选一）
+	ScriptPath string `json:"scriptPath,omitempty"`
+	// 脚本模式的脚本内容（二选一，优先级高于ScriptPath）
+	ScriptContent string `json:"scriptContent,omitempty"`
+	// 是否修改标题
+	ModifyTitle bool `json:"modifyTitle,omitempty"`
+	// 是否修改链接
+	ModifyLink bool `json:"modifyLink,omitempty"`
+	// 是否修改发布时间
+	ModifyPubDate bool `json:"modifyPubDate,omitempty"`
+}
+
+// GetMode 获取处理模式，默认为ai
+func (p PostProcessConfig) GetMode() string {
+	if p.Mode == "" {
+		return "ai"
+	}
+	return p.Mode
+}
+
 // FeedSource 表示单个RSS源或一个文件夹
 type FeedSource struct {
 	// 单个RSS源的URL（与Folder互斥）
@@ -155,8 +183,12 @@ type FeedSource struct {
 	RankingMode bool `json:"rankingMode,omitempty"`
 	// 最大读取条目数，超过此数量的条目将不会被加载（0或不设置表示不限制）
 	MaxItems int `json:"maxItems,omitempty"`
+	// 缓存条目数，获取到新条目后保留旧条目使总数达到此值（0或不设置表示不缓存）
+	CacheItems int `json:"cacheItems,omitempty"`
 	// 分组名称，默认为"关注"
 	Group string `json:"group,omitempty"`
+	// 后处理配置
+	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
 }
 
 // FeedURL 表示文件夹内的单个RSS源
@@ -170,6 +202,10 @@ type FeedURL struct {
 	RankingMode bool `json:"rankingMode,omitempty"`
 	// 最大读取条目数，超过此数量的条目将不会被加载（0或不设置表示不限制）
 	MaxItems int `json:"maxItems,omitempty"`
+	// 缓存条目数，获取到新条目后保留旧条目使总数达到此值（0或不设置表示不缓存）
+	CacheItems int `json:"cacheItems,omitempty"`
+	// 后处理配置
+	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
 }
 
 // IsFolder 判断是否为文件夹类型

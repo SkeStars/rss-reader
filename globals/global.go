@@ -32,6 +32,10 @@ var (
 	ReadState     map[string]int64
 	ReadStateLock sync.RWMutex
 
+	// 条目缓存: map[RSS URL] -> []Item（用于保留旧条目）
+	ItemsCache     map[string][]models.Item
+	ItemsCacheLock sync.RWMutex
+
 	// 下次更新时间
 	NextUpdateTime time.Time
 )
@@ -52,26 +56,27 @@ func Init() {
 	DbMap = make(map[string]models.Feed)
 	FilterCache = make(map[string]models.FilterCacheEntry)
 	ReadState = make(map[string]int64)
+	ItemsCache = make(map[string][]models.Item)
 }
 
-// ReloadConfig 重新加载配置，保留现有缓存
-func ReloadConfig() error {
+// ReloadConfig 重新加载配置，保留现有缓存，返回旧配置用于比较差异
+func ReloadConfig() (models.Config, error) {
 	oldConfig := RssUrls
 	
 	conf, err := models.ParseConf()
 	if err != nil {
-		return fmt.Errorf("解析配置文件失败: %w", err)
+		return oldConfig, fmt.Errorf("解析配置文件失败: %w", err)
 	}
 	RssUrls = conf
 	// 读取 index.html 内容
 	HtmlContent, err = DirStatic.ReadFile("static/index.html")
 	if err != nil {
-		return fmt.Errorf("读取HTML文件失败: %w", err)
+		return oldConfig, fmt.Errorf("读取HTML文件失败: %w", err)
 	}
 	
 	// 智能清理缓存
 	cleanupCaches(oldConfig, conf)
-	return nil
+	return oldConfig, nil
 }
 
 // cleanupCaches 清理不再需要的缓存
@@ -118,17 +123,28 @@ func cleanupCaches(oldConfig, newConfig models.Config) {
 	}
 	
 	// 清理FilterCache中属于已删除源或AI过滤已关闭源的文章
-	// 需要先收集当前启用AI过滤的源的所有文章链接
+	// 需要先收集当前启用AI过滤的源的所有文章链接（包括过滤前的）
 	Lock.RLock()
 	validArticleLinks := make(map[string]bool)
 	for url, feed := range DbMap {
 		if filterEnabledUrls[url] {
+			// 收集过滤前的所有文章
+			for _, link := range feed.AllItemLinks {
+				validArticleLinks[link] = true
+			}
+			// 收集当前展示的所有文章（包含缓存合并的）
 			for _, item := range feed.Items {
 				validArticleLinks[item.Link] = true
 			}
 		}
 	}
+	dbMapEmpty := len(DbMap) == 0
 	Lock.RUnlock()
+	
+	// 如果 DbMap 为空，不执行清理（可能是启动初期或网络问题）
+	if dbMapEmpty {
+		return
+	}
 	
 	// 只保留仍然需要的缓存条目
 	FilterCacheLock.Lock()

@@ -216,11 +216,12 @@
         }
 
         .source-tag {
-          font-size: 12px;
+          font-size: 10px;
           color: #909399;
           display: inline;
           vertical-align: middle;
-          margin-left: 0.3em;
+          margin-left: 0.6em;
+          margin-top: 2px;
         }
 
         .footer-countdown {
@@ -378,7 +379,7 @@
             top: 0;
             right: 0;
             bottom: 0;
-            width: 34px;
+            width: 20px;
             z-index: 10;
           }
         }
@@ -1153,17 +1154,31 @@
             <el-input v-model="currentEditingFeed.icon" placeholder="https://..."></el-input>
           </el-form-item>
 
-          <el-divider content-position="left">AI 过滤策略</el-divider>
+          <el-divider content-position="left">条目限制</el-divider>
 
-          <el-form-item label="启用状态">
-            <el-radio-group v-model="tempFilterEnabled">
-              <el-radio label="default">默认(跟随全局)</el-radio>
-              <el-radio label="true">强制启用</el-radio>
-              <el-radio label="false">强制禁用</el-radio>
-            </el-radio-group>
+          <el-form-item label="最大读取条数">
+            <el-input-number v-model="currentEditingFeed.maxItems" :min="0" :max="500" placeholder="0"></el-input-number>
+            <div class="tip">限制从RSS源读取的最大条目数 (0表示不限制)</div>
           </el-form-item>
 
-          <template v-if="tempFilterEnabled !== 'false'">
+          <el-form-item label="缓存条数">
+            <el-input-number v-model="currentEditingFeed.cacheItems" :min="0" :max="500" placeholder="0"></el-input-number>
+            <div class="tip">保留旧条目使总数达到此值 (0表示不缓存)</div>
+          </el-form-item>
+
+          <el-form-item label="榜单模式">
+            <el-switch v-model="currentEditingFeed.rankingMode"></el-switch>
+            <div class="tip">启用后新上榜的条目总是排在最前面</div>
+          </el-form-item>
+
+          <el-divider content-position="left">AI 过滤策略</el-divider>
+
+          <el-form-item label="启用AI过滤">
+            <el-switch v-model="tempFilterEnabled"></el-switch>
+            <div class="tip">为空时默认不启用</div>
+          </el-form-item>
+
+          <template v-if="tempFilterEnabled">
             <el-form-item label="自定义阈值">
               <el-slider v-model="tempFilterSettings.threshold" :min="0" :max="1" :step="0.05" show-input></el-slider>
               <div class="tip">置信度高于此值将被过滤 (0表示跟随全局)</div>
@@ -1186,6 +1201,39 @@
                 placeholder="输入关键词并回车">
               </el-select>
               <div class="tip">包含这些词的文章将被保留(优先级最高)</div>
+            </el-form-item>
+          </template>
+
+          <el-divider content-position="left">后处理</el-divider>
+
+          <el-form-item label="启用后处理">
+            <el-switch v-model="tempPostProcessEnabled"></el-switch>
+            <div class="tip">在AI过滤后对条目进行二次处理</div>
+          </el-form-item>
+
+          <template v-if="tempPostProcessEnabled">
+            <el-form-item label="处理模式">
+              <el-radio-group v-model="tempPostProcessSettings.mode">
+                <el-radio label="ai">AI处理</el-radio>
+                <el-radio label="script">脚本处理</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+            <el-form-item v-if="tempPostProcessSettings.mode === 'ai'" label="处理提示词">
+              <el-input type="textarea" :rows="3" v-model="tempPostProcessSettings.prompt"
+                placeholder="请对以下RSS条目进行处理，返回JSON格式..."></el-input>
+            </el-form-item>
+
+            <el-form-item v-if="tempPostProcessSettings.mode === 'script'" label="脚本内容">
+              <el-input type="textarea" :rows="6" v-model="tempPostProcessSettings.scriptContent"
+                placeholder="#!/bin/bash&#10;# 读取JSON输入&#10;input=$(cat)&#10;title=$(echo $input | jq -r '.title')&#10;# 输出JSON结果&#10;echo '{&quot;title&quot;: &quot;'$title'&quot;}'"></el-input>
+              <div class="tip">Bash脚本，通过stdin接收JSON，输出JSON结果。需要jq工具。</div>
+            </el-form-item>
+
+            <el-form-item label="修改字段">
+              <el-checkbox v-model="tempPostProcessSettings.modifyTitle">标题</el-checkbox>
+              <el-checkbox v-model="tempPostProcessSettings.modifyLink">链接</el-checkbox>
+              <el-checkbox v-model="tempPostProcessSettings.modifyPubDate">发布时间</el-checkbox>
             </el-form-item>
           </template>
         </el-form>
@@ -1241,7 +1289,7 @@
                           <span class="item-content"><el-link href="<< $item.Link >>" target="_blank">
                               << $item.Title>>
                             </el-link>
-                            <<if and $item.Source $feed.IsFolder>> <span class="source-tag">[<< $item.Source>>]</span>
+                            <<if and $feed.IsFolder $item.Source (ne $item.Source "")>> <span class="source-tag"><< $item.Source>></span>
                               <<end>>
                           </span>
                         </div>
@@ -1274,9 +1322,10 @@
                             <span class="item-number">{{ i+1 }}</span>
                           </div>
                           <span class="item-content">
-                            <el-link :href="item.link" target="_blank">{{ item.title
-                              }}</el-link><span v-if="item.source && feed.isFolder" class="source-tag"> [{{ item.source
-                              }}]</span>
+                            <el-link :href="item.link" target="_blank" @click.stop="markAsRead(item.link, false)">{{
+                              item.title
+                              }}</el-link><span v-if="feed.isFolder && item.source && item.source !== ''" class="source-tag"> {{ item.source
+                              }}</span>
                           </span>
                         </div>
                       </el-list-item>
@@ -1332,12 +1381,22 @@
           currentFolder: null,
           showFeedSettingsModal: false,
           currentEditingFeed: null,
-          tempFilterEnabled: 'default', // 'default', 'true', 'false'
+          tempFilterEnabled: false, // boolean
           tempFilterSettings: {
             threshold: 0,
             customPrompt: '',
             filterKeywords: [],
             keepKeywords: []
+          },
+          // 后处理临时设置
+          tempPostProcessEnabled: false,
+          tempPostProcessSettings: {
+            mode: 'ai',
+            prompt: '',
+            scriptContent: '',
+            modifyTitle: true,
+            modifyLink: false,
+            modifyPubDate: false
           },
         };
       },
@@ -1390,12 +1449,18 @@
         isRead(link) {
           return this.readItems.has(link);
         },
-        markAsRead(link) {
-          if (this.readItems.has(link)) return;
-          this.readItems.add(link);
-          this.saveReadItems();
-          // 同步到后端
-          this.syncReadToServer(link);
+        markAsRead(link, openLink = true) {
+          // 标记为已读
+          if (!this.readItems.has(link)) {
+            this.readItems.add(link);
+            this.saveReadItems();
+            // 同步到后端
+            this.syncReadToServer(link);
+          }
+          // 打开链接
+          if (openLink && link) {
+            window.open(link, '_blank');
+          }
         },
         async syncReadToServer(link) {
           try {
@@ -1427,10 +1492,6 @@
             });
 
             if (response.ok) {
-              // 等待后端处理完成
-              // 由于后端已改为同步处理，不再需要强制等待
-              // await new Promise(resolve => setTimeout(resolve, 1500));
-
               // 获取最新的feeds数据
               const feedsResponse = await fetch('/feeds');
               if (feedsResponse.ok) {
@@ -1438,14 +1499,17 @@
                 // 找到对应的feed并更新
                 const updatedFeed = feeds.find(f => f.link === feed.link);
                 if (updatedFeed) {
+                  // 更新对象属性
                   Object.assign(feed, updatedFeed);
                   this.$message.success('刷新成功');
                 } else {
-                  this.$message.warning('未找到更新数据');
+                  this.$message.warning('已刷新，但未能在列表中找到该源');
                 }
+              } else {
+                this.$message.error('获取最新数据失败');
               }
             } else {
-              this.$message.error('刷新失败');
+              this.$message.error('刷新请求失败');
             }
           } catch (e) {
             console.error('Failed to refresh feed:', e);
@@ -1487,6 +1551,8 @@
               // 重置倒计时
               this.countdown = this.refreshInterval * 60;
               this.updateCountdown();
+            } else {
+              this.$message.error('获取最新数据失败');
             }
           } catch (e) {
             console.error('Failed to refresh all feeds:', e);
@@ -1690,9 +1756,14 @@
         },
         openFeedSettings(row) {
           this.currentEditingFeed = row;
+          
+          // Init maxItems and cacheItems (直接使用 row 的值，el-input-number 会处理 undefined)
+          if (row.maxItems === undefined) row.maxItems = 0;
+          if (row.cacheItems === undefined) row.cacheItems = 0;
+          
           // Init temp vars from row
           if (!row.filter) {
-            this.tempFilterEnabled = 'default';
+            this.tempFilterEnabled = false;
             this.tempFilterSettings = {
               threshold: 0,
               customPrompt: '',
@@ -1700,9 +1771,7 @@
               keepKeywords: []
             };
           } else {
-            if (row.filter.enabled === true) this.tempFilterEnabled = 'true';
-            else if (row.filter.enabled === false) this.tempFilterEnabled = 'false';
-            else this.tempFilterEnabled = 'default';
+            this.tempFilterEnabled = row.filter.enabled || false;
 
             this.tempFilterSettings = {
               threshold: row.filter.threshold || 0,
@@ -1711,21 +1780,55 @@
               keepKeywords: row.filter.keepKeywords ? [...row.filter.keepKeywords] : []
             };
           }
+
+          // Init post-process temp vars from row
+          if (!row.postProcess) {
+            this.tempPostProcessEnabled = false;
+            this.tempPostProcessSettings = {
+              mode: 'ai',
+              prompt: '',
+              scriptContent: '',
+              modifyTitle: true,
+              modifyLink: false,
+              modifyPubDate: false
+            };
+          } else {
+            this.tempPostProcessEnabled = row.postProcess.enabled || false;
+            this.tempPostProcessSettings = {
+              mode: row.postProcess.mode || 'ai',
+              prompt: row.postProcess.prompt || '',
+              scriptContent: row.postProcess.scriptContent || '',
+              modifyTitle: row.postProcess.modifyTitle !== false,
+              modifyLink: row.postProcess.modifyLink || false,
+              modifyPubDate: row.postProcess.modifyPubDate || false
+            };
+          }
+
           this.showFeedSettingsModal = true;
         },
         saveFeedSettings() {
           if (!this.currentEditingFeed) return;
 
+          // Handle maxItems and cacheItems
+          if (this.currentEditingFeed.maxItems === 0 || this.currentEditingFeed.maxItems === null) {
+            this.currentEditingFeed.maxItems = undefined;
+          }
+          if (this.currentEditingFeed.cacheItems === 0 || this.currentEditingFeed.cacheItems === null) {
+            this.currentEditingFeed.cacheItems = undefined;
+          }
+
           // Construct filter object
           let filter = this.currentEditingFeed.filter || {};
 
           // Enabled state
-          if (this.tempFilterEnabled === 'true') filter.enabled = true;
-          else if (this.tempFilterEnabled === 'false') filter.enabled = false;
-          else filter.enabled = undefined; // Remove property for default
+          if (this.tempFilterEnabled) {
+            filter.enabled = true;
+          } else {
+            filter.enabled = undefined; // Remove property when disabled
+          }
 
           // Other settings
-          if (this.tempFilterEnabled !== 'false') {
+          if (this.tempFilterEnabled) {
             if (this.tempFilterSettings.threshold > 0) filter.threshold = this.tempFilterSettings.threshold;
             else filter.threshold = undefined;
 
@@ -1740,12 +1843,34 @@
           }
 
           // Check if filter object is empty (all undefined)
-          const isEmpty = Object.keys(filter).every(k => filter[k] === undefined);
+          const filterEmpty = Object.keys(filter).every(k => filter[k] === undefined);
 
-          if (isEmpty) {
+          if (filterEmpty) {
             this.currentEditingFeed.filter = undefined;
           } else {
             this.currentEditingFeed.filter = filter;
+          }
+
+          // Construct post-process object
+          if (this.tempPostProcessEnabled) {
+            let postProcess = {
+              enabled: true,
+              mode: this.tempPostProcessSettings.mode,
+              modifyTitle: this.tempPostProcessSettings.modifyTitle,
+              modifyLink: this.tempPostProcessSettings.modifyLink,
+              modifyPubDate: this.tempPostProcessSettings.modifyPubDate
+            };
+
+            if (this.tempPostProcessSettings.mode === 'ai' && this.tempPostProcessSettings.prompt) {
+              postProcess.prompt = this.tempPostProcessSettings.prompt;
+            }
+            if (this.tempPostProcessSettings.mode === 'script' && this.tempPostProcessSettings.scriptContent) {
+              postProcess.scriptContent = this.tempPostProcessSettings.scriptContent;
+            }
+
+            this.currentEditingFeed.postProcess = postProcess;
+          } else {
+            this.currentEditingFeed.postProcess = undefined;
           }
 
           this.showFeedSettingsModal = false;
