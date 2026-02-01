@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400" viewBox="0 0 400 400">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400" viewBox="40 40 320 320">
   <defs>
     <style>
       .cls-1 {
@@ -81,7 +81,7 @@
       <feComposite in="SourceGraphic"/>
     </filter>
     <clipPath id="clip-Web_1280_6">
-      <rect width="400" height="400"/>
+      <rect x="40" y="40" width="320" height="320"/>
     </clipPath>
   </defs>
   <g id="Web_1280_6" data-name="Web 1280 – 6" class="cls-1">
