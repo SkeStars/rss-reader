@@ -899,7 +899,14 @@
             </div>
 
             <!-- PC View -->
-            <el-table v-if="isPc" :data="config.sources" style="width: 100%" row-key="_id" border default-expand-all>
+            <el-table class="sources-table" v-if="isPc" :data="config.sources" style="width: 100%" row-key="_id" border default-expand-all>
+              <el-table-column width="40">
+                <template #default>
+                  <div class="drag-handle" style="cursor: move; text-align: center; color: #909399;">
+                    ☰
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="name" label="名称" width="200">
                 <template #default="scope">
                   <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
@@ -952,7 +959,7 @@
             </el-table>
 
             <!-- Mobile View -->
-            <div v-else class="mobile-feed-list">
+            <div v-else class="mobile-feed-list sources-list">
               <div v-for="(item, index) in config.sources" :key="item._id" class="mobile-feed-card">
                 <div class="mobile-card-header">
                   <span class="mobile-card-title">
@@ -1050,6 +1057,35 @@
               </template>
             </el-form>
           </el-tab-pane>
+
+          <!-- Group Management Tab -->
+          <el-tab-pane label="分组管理" name="groups">
+            <div class="groups-manager" :style="{ padding: isPc ? '0' : '10px' }">
+              <div style="margin-bottom: 10px; color: #666; font-size: 14px;">
+                拖动调整分组顺序，选中单选框设置默认展示分组。
+              </div>
+              <el-table :data="editingGroups" row-key="name" class="groups-table" border style="width: 100%; max-width: 600px; margin: 0 auto;">
+                <el-table-column width="50" align="center">
+                  <template #default>
+                    <div class="group-drag-handle" style="cursor: move; color: #909399;">
+                      ☰
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column label="分组名称" prop="name">
+                  <template #default="scope">
+                    {{ scope.row.name }}
+                    <span v-if="scope.row.name === '关注'" style="font-size: 12px; color: #999;">(系统默认)</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="默认展示" width="100" align="center">
+                  <template #default="scope">
+                    <el-radio v-model="config.defaultGroup" :label="scope.row.name">&nbsp;</el-radio>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </div>
       <span slot="footer" class="dialog-footer">
@@ -1069,7 +1105,14 @@
           </el-button>
 
           <!-- PC Table -->
-          <el-table v-if="isPc" :data="currentFolder.urls" border>
+          <el-table class="folder-table" v-if="isPc" :data="currentFolder.urls" border row-key="url">
+            <el-table-column width="40">
+              <template #default>
+                <div class="drag-handle" style="cursor: move; text-align: center; color: #909399;">
+                  ☰
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="name" label="名称">
               <template #default="scope">
                 <el-input v-if="scope.row.editMode" v-model="scope.row.name" size="small"></el-input>
@@ -1108,7 +1151,7 @@
           </el-table>
 
           <!-- Mobile List -->
-          <div v-else class="mobile-feed-list">
+          <div v-else class="mobile-feed-list folder-list">
             <div v-for="(item, index) in currentFolder.urls" :key="index" class="mobile-feed-card">
               <div class="mobile-card-header">
                 <div class="mobile-card-title" style="flex:1">
@@ -1349,6 +1392,7 @@
 
   <!-- <script src="https://unpkg.com/vue@next"></script> -->
   <script src="static/vue.global.prod.js"></script>
+  <script src="static/Sortable.min.js"></script>
 
   <!-- <script src="https://cdn.bootcdn.net/ajax/libs/element-plus/2.3.3/index.full.js"></script> -->
   <script src="static/index.full.min.js"></script>
@@ -1358,7 +1402,7 @@
       data() {
         return {
           feeds: window.__initialFeeds || [],
-          currentGroup: '关注',
+          currentGroup: '<< .DefaultGroup >>' || '关注',
           groups: << if .Groups >><< .Groups | json >><< else >> ['关注'] << end >>,
           showSEOFlag: false,
           fullscreenLoading: true,
@@ -1398,6 +1442,7 @@
             modifyLink: false,
             modifyPubDate: false
           },
+          editingGroups: [],
         };
       },
       computed: {
@@ -1408,6 +1453,33 @@
             return group === this.currentGroup;
           });
         }
+      },
+      watch: {
+        showConfigModal(val) {
+          if (val) {
+            this.$nextTick(() => {
+              this.initSortable();
+            });
+          }
+        },
+        showFolderModal(val) {
+          if (val) {
+            this.$nextTick(() => {
+              // Delay slightly to ensure dialog animation/rendering
+              setTimeout(() => {
+                 this.initFolderSortable();
+              }, 100);
+            });
+          }
+        },
+        activeTab(val) {
+          if (val === 'groups') {
+            this.syncEditingGroups();
+            this.$nextTick(() => {
+               this.initGroupSortable();
+            });
+          }
+        },
       },
       methods: {
         selectGroup(group) {
@@ -1670,6 +1742,18 @@
                   }
                 });
               }
+              
+              // Initialize group config
+              if (!this.config.groupOrder) this.config.groupOrder = [];
+              const derivedGroups = new Set();
+              this.config.sources.forEach(s => derivedGroups.add(s.group || '关注'));
+              derivedGroups.forEach(g => {
+                if (!this.config.groupOrder.includes(g)) {
+                   this.config.groupOrder.push(g);
+                }
+              });
+              this.editingGroups = this.config.groupOrder.map(g => ({name: g}));
+              
               if (!this.config.aiFilter) this.config.aiFilter = { enabled: false };
               this.nightStartTime = this.config.nightStartTime;
               this.nightEndTime = this.config.nightEndTime;
@@ -1686,6 +1770,8 @@
             // UPDATE TIME
             this.config.nightStartTime = this.nightStartTime;
             this.config.nightEndTime = this.nightEndTime;
+            // Update Group Order
+            this.config.groupOrder = this.editingGroups.map(g => g.name);
 
             const res = await fetch('/api/save-config', {
               method: 'POST',
@@ -1898,6 +1984,71 @@
             const item = this.currentFolder.urls.splice(index, 1)[0];
             this.currentFolder.urls.splice(index + 1, 0, item);
           }
+        },
+        initSortable() {
+          const el = this.isPc 
+            ? document.querySelector('.sources-table .el-table__body-wrapper tbody') 
+            : document.querySelector('.sources-list');
+          
+          if (el && !el._sortable) {
+            el._sortable = Sortable.create(el, {
+              animation: 150,
+              handle: this.isPc ? '.drag-handle' : null, 
+              onEnd: ({ newIndex, oldIndex }) => {
+                if (newIndex === oldIndex) return;
+                const item = this.config.sources.splice(oldIndex, 1)[0];
+                this.config.sources.splice(newIndex, 0, item);
+              }
+            });
+          }
+        },
+        initFolderSortable() {
+          const el = this.isPc
+            ? document.querySelector('.folder-table .el-table__body-wrapper tbody')
+            : document.querySelector('.folder-list');
+
+          if (el && !el._sortable) {
+            el._sortable = Sortable.create(el, {
+              animation: 150,
+              handle: this.isPc ? '.drag-handle' : null,
+              onEnd: ({ newIndex, oldIndex }) => {
+                 if (newIndex === oldIndex) return;
+                 const item = this.currentFolder.urls.splice(oldIndex, 1)[0];
+                 this.currentFolder.urls.splice(newIndex, 0, item);
+              }
+            });
+          }
+        },
+        initGroupSortable() {
+          const el = document.querySelector('.groups-table .el-table__body-wrapper tbody');
+          if (el && !el._sortable) {
+            el._sortable = Sortable.create(el, {
+              animation: 150,
+              handle: '.group-drag-handle',
+              onEnd: ({ newIndex, oldIndex }) => {
+                if (newIndex === oldIndex) return;
+                const item = this.editingGroups.splice(oldIndex, 1)[0];
+                this.editingGroups.splice(newIndex, 0, item);
+              }
+            });
+          }
+        },
+        syncEditingGroups() {
+          if (!this.config) return;
+          const derivedGroups = new Set();
+          this.config.sources.forEach(s => derivedGroups.add(s.group || '关注'));
+          
+          // Current existing in editingGroups
+          const currentNames = this.editingGroups.map(g => g.name);
+          
+          // Add any new ones detected in sources
+          derivedGroups.forEach(g => {
+            if (!currentNames.includes(g)) {
+               this.editingGroups.push({name: g});
+            }
+          });
+          // Note: we do not remove groups that are in editingGroups but not in sources,
+          // to preserve order if temporary empty, or let user delete manually (if we added delete button, but we didn't)
         },
         checkIsPc() {
           this.isPc = !window.matchMedia('(max-width: 767px)').matches;

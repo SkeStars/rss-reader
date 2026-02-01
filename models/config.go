@@ -222,6 +222,10 @@ type Config struct {
 	Password string `json:"password,omitempty"`
 	// AI过滤配置
 	AIFilter AIFilterConfig `json:"aiFilter,omitempty"`
+	// 分组顺序（可选，如果不设置则按订阅源出现顺序）
+	GroupOrder []string `json:"groupOrder,omitempty"`
+	// 默认选中的分组（可选，默认为第一个分组）
+	DefaultGroup string `json:"defaultGroup,omitempty"`
 }
 
 // GetAllUrls 获取所有RSS源URL（包括文件夹内的）

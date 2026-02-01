@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"rss-reader/globals"
 	"rss-reader/models"
-	"sort"
 	"syscall"
 
 	"rss-reader/utils"
@@ -106,6 +105,7 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		DarkMode       bool
 		ReFresh        int
 		Groups         []string
+		DefaultGroup   string
 		NextUpdateTime string
 	}{
 		Keywords:       getKeywords(),
@@ -113,6 +113,7 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		DarkMode:       darkMode,
 		ReFresh:        globals.RssUrls.ReFresh,
 		Groups:         getGroups(utils.GetFeeds()),
+		DefaultGroup:   globals.RssUrls.DefaultGroup,
 		NextUpdateTime: nextUpdate.Format(time.RFC3339),
 	}
 
@@ -188,29 +189,69 @@ func getFeedsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGroups(feeds []models.Feed) []string {
+	// 优先使用配置中的 GroupOrder
+	if len(globals.RssUrls.GroupOrder) > 0 {
+		// 收集所有实际存在的分组
+		existingGroups := make(map[string]struct{})
+		for _, source := range globals.RssUrls.Sources {
+			group := source.Group
+			if group == "" {
+				group = "关注"
+			}
+			existingGroups[group] = struct{}{}
+		}
+		
+		// 按照 GroupOrder 顺序返回，只保留实际存在的分组
+		result := make([]string, 0)
+		for _, g := range globals.RssUrls.GroupOrder {
+			if _, exists := existingGroups[g]; exists {
+				result = append(result, g)
+				delete(existingGroups, g)
+			}
+		}
+		// 添加未在 GroupOrder 中的分组
+		for g := range existingGroups {
+			result = append(result, g)
+		}
+		if len(result) == 0 {
+			result = append(result, "关注")
+		}
+		return result
+	}
+	
+	// 使用配置中订阅源的分组顺序
 	groupSet := make(map[string]struct{})
+	groups := make([]string, 0)
+	
+	// 从配置中获取分组顺序
+	for _, source := range globals.RssUrls.Sources {
+		group := source.Group
+		if group == "" {
+			group = "关注"
+		}
+		if _, exists := groupSet[group]; !exists {
+			groupSet[group] = struct{}{}
+			groups = append(groups, group)
+		}
+	}
+	
+	// 确保有 feeds 数据时也检查（兼容性）
 	for _, feed := range feeds {
-		if feed.Group != "" {
-			groupSet[feed.Group] = struct{}{}
-		} else {
-			groupSet["关注"] = struct{}{}
+		group := feed.Group
+		if group == "" {
+			group = "关注"
+		}
+		if _, exists := groupSet[group]; !exists {
+			groupSet[group] = struct{}{}
+			groups = append(groups, group)
 		}
 	}
 	
-	groups := make([]string, 0, len(groupSet))
-	hasFocus := false
-	for g := range groupSet {
-		if g == "关注" {
-			hasFocus = true
-			continue
-		}
-		groups = append(groups, g)
+	// 如果没有任何分组，返回默认的"关注"
+	if len(groups) == 0 {
+		groups = append(groups, "关注")
 	}
-	sort.Strings(groups)
 	
-	if hasFocus {
-		groups = append([]string{"关注"}, groups...)
-	}
 	return groups
 }
 
