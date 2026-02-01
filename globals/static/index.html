@@ -960,13 +960,25 @@
 
             <!-- Mobile View -->
             <div v-else class="mobile-feed-list sources-list">
-              <div v-for="(item, index) in config.sources" :key="item._id" class="mobile-feed-card">
-                <div class="mobile-card-header">
-                  <span class="mobile-card-title">
+              <div v-for="(item, index) in config.sources" :key="item._id" class="mobile-feed-card" style="position: relative;">
+                
+                <el-button type="text" size="medium" class="mobile-delete-btn" 
+                   @click="removeSource(index)" 
+                   style="position: absolute; right: 2px; top: 8px; z-index: 10; width: 32px; height: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; color: #909399;">
+                   <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor">
+                    <path d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"></path>
+                   </svg>
+                </el-button>
+
+                <div class="mobile-card-header" style="padding-right: 35px; justify-content: flex-start;">
+                  <div class="drag-handle-mobile" style="width: 24px; margin-right: 5px; cursor: move; color: #909399; font-size: 20px; text-align: center; flex-shrink: 0;">
+                    ☰
+                  </div>
+                  <span class="mobile-card-title" style="flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 5px;">
                     <el-input v-if="item.editMode" v-model="item.name" size="small" placeholder="名称"></el-input>
                     <span v-else>{{ item.name || (item.urls ? '文件夹' : '未命名') }}</span>
                   </span>
-                  <el-tag size="mini" v-if="item.urls">文件夹</el-tag>
+                  <el-tag size="mini" v-if="item.urls" style="flex-shrink: 0;">文件夹</el-tag>
                 </div>
 
                 <div class="mobile-card-row">
@@ -1005,7 +1017,7 @@
                   <el-button v-if="item.urls" type="warning" size="mini" plain
                     @click="manageFolder(item)">内容</el-button>
 
-                  <el-button type="danger" size="mini" plain @click="removeSource(index)">删除</el-button>
+                  <!-- Delete button moved to top-right -->
                 </div>
               </div>
             </div>
@@ -1089,7 +1101,7 @@
         </el-tabs>
       </div>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="showConfigModal = false">关闭</el-button>
+        <el-button @click="showConfigModal = false" style="margin-right: 15px;">关闭</el-button>
         <el-button type="primary" @click="saveConfig">保存并应用</el-button>
       </span>
 
@@ -1152,9 +1164,21 @@
 
           <!-- Mobile List -->
           <div v-else class="mobile-feed-list folder-list">
-            <div v-for="(item, index) in currentFolder.urls" :key="index" class="mobile-feed-card">
-              <div class="mobile-card-header">
-                <div class="mobile-card-title" style="flex:1">
+            <div v-for="(item, index) in currentFolder.urls" :key="index" class="mobile-feed-card" style="position: relative;">
+               
+              <el-button type="text" size="medium" class="mobile-delete-btn" 
+                   @click="removeFeedFromFolder(index)" 
+                   style="position: absolute; right: 2px; top: 8px; z-index: 10; width: 32px; height: 32px; min-height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; color: #909399;">
+                   <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor">
+                    <path d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"></path>
+                   </svg>
+              </el-button>
+
+              <div class="mobile-card-header" style="padding-right: 35px; justify-content: flex-start;">
+                <div class="drag-handle-mobile" style="width: 24px; margin-right: 5px; cursor: move; color: #909399; font-size: 20px; text-align: center; flex-shrink: 0;">
+                  ☰
+                </div>
+                <div class="mobile-card-title" style="flex:1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 5px;">
                   <el-input v-if="item.editMode" v-model="item.name" size="small" placeholder="名称"></el-input>
                   <span v-else>{{ item.name }}</span>
                 </div>
@@ -1181,7 +1205,7 @@
 
                 <el-button type="info" size="mini" plain @click="openFeedSettings(item)">设置</el-button>
 
-                <el-button type="danger" size="mini" plain @click="removeFeedFromFolder(index)">删除</el-button>
+                <!-- Delete button moved to top right -->
               </div>
             </div>
           </div>
@@ -1282,7 +1306,7 @@
         </el-form>
       </div>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="showFeedSettingsModal = false">取消</el-button>
+        <el-button @click="showFeedSettingsModal = false" style="margin-right: 15px;">取消</el-button>
         <el-button type="primary" @click="saveFeedSettings">确定</el-button>
       </span>
     </el-dialog>
@@ -1993,7 +2017,7 @@
           if (el && !el._sortable) {
             el._sortable = Sortable.create(el, {
               animation: 150,
-              handle: this.isPc ? '.drag-handle' : null, 
+              handle: this.isPc ? '.drag-handle' : '.drag-handle-mobile', 
               onEnd: ({ newIndex, oldIndex }) => {
                 if (newIndex === oldIndex) return;
                 const item = this.config.sources.splice(oldIndex, 1)[0];
@@ -2010,7 +2034,7 @@
           if (el && !el._sortable) {
             el._sortable = Sortable.create(el, {
               animation: 150,
-              handle: this.isPc ? '.drag-handle' : null,
+              handle: this.isPc ? '.drag-handle' : '.drag-handle-mobile',
               onEnd: ({ newIndex, oldIndex }) => {
                  if (newIndex === oldIndex) return;
                  const item = this.currentFolder.urls.splice(oldIndex, 1)[0];
