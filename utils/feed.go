@@ -306,7 +306,7 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 	passedLinks := make(map[string]bool)
 	
 	if ShouldFilter(url) {
-		log.Printf("%s [开始AI过滤] 源: %s | 待处理条目: %d", prefix, result.Title, originalCount)
+		log.Printf("%s [开始过滤] 源: %s | 待处理条目: %d", prefix, result.Title, originalCount)
 		filteredItems = FilterItems(allItems, url)
 		for _, item := range filteredItems {
 			passedLinks[item.Link] = true
@@ -927,7 +927,7 @@ func WatchConfigFileChanges(filePath string) {
 			formattedTime := time.Now().Format("2006-01-02 15:04:05")
 
 			for url := range affectedUrls {
-				go UpdateFeed(url, formattedTime, true)
+				go UpdateFeedWithOptions(url, formattedTime, true, true)
 			}
 		}
 

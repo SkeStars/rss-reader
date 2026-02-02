@@ -323,7 +323,7 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 					result.isFiltered = cacheEntry.IsFiltered
 					result.fromCache = true
 					if result.isFiltered {
-						log.Printf("[AI过滤命中-来自缓存] 文章 [%s]", job.item.Title)
+						log.Printf("[过滤命中-来自缓存] 文章 [%s]", job.item.Title)
 					}
 				} else {
 					// 没有缓存，调用过滤逻辑
@@ -337,7 +337,7 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 						result.reason = resp.Reason
 
 						if result.isFiltered {
-							log.Printf("[AI过滤命中-新处理] 文章 [%s]: %s (置信度: %.2f)", job.item.Title, resp.Reason, resp.Confidence)
+							log.Printf("[过滤命中-新处理] 文章 [%s]: %s (置信度: %.2f)", job.item.Title, resp.Reason, resp.Confidence)
 						} else if resp.Confidence > 0 {
 							// 即使没被过滤，如果是新处理的且有置信度，也可以选择性记录（可选）
 							// log.Printf("[AI过滤通过-新处理] 文章 [%s]: %s (置信度: %.2f)", job.item.Title, resp.Reason, resp.Confidence)
@@ -419,7 +419,7 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 
 	// 只在有新判断时展示统计
 	if newItems > 0 || failedItems > 0 {
-		log.Printf("[AI过滤统计] 源 [%s]: 并发数 %d，新判断 %d 篇，过滤 %d 篇，保留 %d 篇 | 缓存命中 %d 篇（其中过滤 %d 篇）", 
+		log.Printf("[过滤统计] 源 [%s]: 并发数 %d，新判断 %d 篇，过滤 %d 篇，保留 %d 篇 | 缓存命中 %d 篇（其中过滤 %d 篇）", 
 			rssURL, concurrency, newItems, filteredByAI, newItems-filteredByAI, cacheHits, filteredByCache)
 	}
 
