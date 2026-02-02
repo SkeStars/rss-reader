@@ -11,6 +11,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"html/template"
 	"encoding/json"
+	"net/http"
 )
 
 var (
@@ -24,7 +25,16 @@ var (
 
 	HtmlContent []byte
 
-	Fp = gofeed.NewParser()
+	Fp = func() *gofeed.Parser {
+		fp := gofeed.NewParser()
+		fp.Client = &http.Client{
+			Transport: &userAgentTransport{
+				base: http.DefaultTransport,
+			},
+			Timeout: 30 * time.Second,
+		}
+		return fp
+	}()
 
 	// 过滤结果缓存: map[文章Link] -> 过滤决策
 	FilterCache     map[string]models.FilterCacheEntry
@@ -44,6 +54,21 @@ var (
 	// 缓存的页面模板
 	Tpl *template.Template
 )
+
+type userAgentTransport struct {
+	base http.RoundTripper
+}
+
+func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	}
+	// 增加一些常见的头信息
+	if req.Header.Get("Accept") == "" {
+		req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
+	}
+	return t.base.RoundTrip(req)
+}
 
 // Init 首次初始化，创建所有缓存
 func Init() {
