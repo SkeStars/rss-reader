@@ -1328,7 +1328,8 @@
 
     <el-container>
 
-      <el-main v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="拼命加载中">
+      <el-main v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="拼命加载中" @touchstart="handleTouchStart"
+        @touchend="handleTouchEnd">
         <!-- 分组切换 -->
         <div class="group-tabs-container">
           <div v-for="group in groups" :key="group" class="group-tab" :class="{ active: currentGroup === group }"
@@ -1484,6 +1485,8 @@
             modifyPubDate: false
           },
           editingGroups: [],
+          touchStartX: 0,
+          touchStartY: 0,
         };
       },
       computed: {
@@ -1525,6 +1528,12 @@
       methods: {
         selectGroup(group) {
           this.currentGroup = group;
+          this.$nextTick(() => {
+            const activeTab = document.querySelector('.group-tab.active');
+            if (activeTab) {
+              activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+          });
         },
         timeAgo(dateStr) {
           if (!dateStr) return '';
@@ -2094,6 +2103,36 @@
         },
         checkIsPc() {
           this.isPc = !window.matchMedia('(max-width: 767px)').matches;
+        },
+        handleTouchStart(e) {
+          if (this.isPc) return;
+          // 如果触点在标签页容器内，则优先允许标签页自身的水平滚动，不触发页面级切换
+          if (e.target.closest('.group-tabs-container')) return;
+          this.touchStartX = e.touches[0].clientX;
+          this.touchStartY = e.touches[0].clientY;
+        },
+        handleTouchEnd(e) {
+          if (this.isPc) return;
+          const touchEndX = e.changedTouches[0].clientX;
+          const touchEndY = e.changedTouches[0].clientY;
+          const deltaX = touchEndX - this.touchStartX;
+          const deltaY = touchEndY - this.touchStartY;
+
+          // 阈值：水平移动距离 > 70 且垂直移动距离较小 (避免与上下滚动冲突)
+          if (Math.abs(deltaY) < 100) {
+            const currentIndex = this.groups.indexOf(this.currentGroup);
+            if (currentIndex === -1 || this.groups.length <= 1) return;
+
+            if (deltaX > 70) {
+              // 向右滑动 -> 上一个分组
+              const prevIndex = (currentIndex - 1 + this.groups.length) % this.groups.length;
+              this.selectGroup(this.groups[prevIndex]);
+            } else if (deltaX < -70) {
+              // 向左滑动 -> 下一个分组
+              const nextIndex = (currentIndex + 1) % this.groups.length;
+              this.selectGroup(this.groups[nextIndex]);
+            }
+          }
         },
       },
       async created() {
