@@ -386,6 +386,7 @@
 
         << if .DarkMode>>body {
           background-color: #1a1a1a;
+          color: #e0e0e0;
         }
 
         #initial-loader {
@@ -402,6 +403,641 @@
 
         .scroll-container.scrolling::-webkit-scrollbar-thumb:hover {
           background-color: #5a5a5a;
+        }
+
+        /* 卡片背景和文字 */
+        .box-card {
+          background-color: #242424 !important;
+        }
+
+        .el-card {
+          background-color: #242424 !important;
+          --el-card-bg-color: #242424 !important;
+        }
+
+        .el-card__header {
+          border-bottom-color: #3a3a3a !important;
+        }
+
+        .card-header-title {
+          color: #e0e0e0;
+        }
+
+        .card-header-title:hover {
+          color: #409EFF;
+        }
+
+        /* 链接颜色 */
+        a {
+          color: #e0e0e0;
+        }
+
+        .el-link {
+          color: #e0e0e0 !important;
+        }
+
+        .el-link:hover {
+          color: #409EFF !important;
+        }
+
+        /* 列表条目 Hover 样式 */
+        .list-item-title:hover .el-link,
+        .list-item-title:hover .el-link__inner {
+          color: #409EFF !important;
+        }
+
+        /* 时间和标签颜色 */
+        .time {
+          color: #888;
+        }
+
+        .source-tag {
+          color: #777;
+        }
+
+        /* 提示文字 */
+        .tip {
+          color: #888 !important;
+        }
+
+        /* Footer 样式 */
+        .el-footer {
+          background-color: #1a1a1a;
+          color: #888;
+        }
+
+        .footer-countdown {
+          color: #888;
+        }
+
+        .refresh-all-link {
+          color: #888;
+        }
+
+        .refresh-all-link:hover {
+          color: #409EFF;
+        }
+
+        /* 对话框背景 */
+        .el-dialog {
+          background-color: #242424 !important;
+          --el-dialog-bg-color: #242424 !important;
+        }
+
+        .el-dialog__header {
+          background-color: #242424 !important;
+        }
+
+        .el-dialog__title {
+          color: #e0e0e0 !important;
+        }
+
+        .el-dialog__body {
+          background-color: #242424 !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-dialog__footer {
+          background-color: #242424 !important;
+        }
+
+        .el-dialog__headerbtn .el-dialog__close {
+          color: #888 !important;
+        }
+
+        .el-dialog__headerbtn:hover .el-dialog__close {
+          color: #409EFF !important;
+        }
+
+        /* 遮罩层 */
+        .el-overlay {
+          background-color: rgba(0, 0, 0, 0.7) !important;
+        }
+
+        /* Tab 标签页 */
+        .el-tabs__header {
+          background-color: transparent;
+        }
+
+        .el-tabs__nav-wrap::after {
+          background-color: #3a3a3a !important;
+        }
+
+        .el-tabs__item {
+          color: #999 !important;
+        }
+
+        .el-tabs__item.is-active {
+          color: #409EFF !important;
+        }
+
+        .el-tabs__item:hover {
+          color: #409EFF !important;
+        }
+
+        .el-tabs__active-bar {
+          background-color: #409EFF !important;
+        }
+
+        /* 表格样式 */
+        .el-table {
+          background-color: #242424 !important;
+          --el-table-bg-color: #242424 !important;
+          --el-table-tr-bg-color: #242424 !important;
+          --el-table-header-bg-color: #2d2d2d !important;
+          --el-table-row-hover-bg-color: #2d2d2d !important;
+          --el-table-border-color: #3a3a3a !important;
+          --el-table-text-color: #e0e0e0 !important;
+          --el-table-header-text-color: #e0e0e0 !important;
+        }
+
+        .el-table th.el-table__cell {
+          background-color: #2d2d2d !important;
+        }
+
+        .el-table tr {
+          background-color: #242424 !important;
+        }
+
+        .el-table--border .el-table__cell {
+          border-color: #3a3a3a !important;
+        }
+
+        .el-table__row:hover>td.el-table__cell {
+          background-color: #2d2d2d !important;
+        }
+
+        /* 表格固定列 */
+        .el-table__fixed,
+        .el-table__fixed-right {
+          background-color: #242424 !important;
+        }
+
+        .el-table__fixed-right-patch {
+          background-color: #2d2d2d !important;
+        }
+
+        .el-table__fixed .el-table__cell,
+        .el-table__fixed-right .el-table__cell {
+          background-color: #242424 !important;
+        }
+
+        .el-table__fixed th.el-table__cell,
+        .el-table__fixed-right th.el-table__cell {
+          background-color: #2d2d2d !important;
+        }
+
+        .el-table__fixed .el-table__row:hover>td.el-table__cell,
+        .el-table__fixed-right .el-table__row:hover>td.el-table__cell {
+          background-color: #2d2d2d !important;
+        }
+
+        /* 表格固定列阴影 */
+        .el-table__fixed-right::before,
+        .el-table__fixed::before {
+          background-color: transparent !important;
+        }
+
+        .el-table--scrollable-x .el-table__body-wrapper {
+          background-color: #242424 !important;
+        }
+
+        /* 表单元素 */
+        .el-input__wrapper {
+          background-color: #2d2d2d !important;
+          box-shadow: 0 0 0 1px #3a3a3a inset !important;
+        }
+
+        .el-input__wrapper:hover {
+          box-shadow: 0 0 0 1px #4a4a4a inset !important;
+        }
+
+        .el-input__wrapper.is-focus {
+          box-shadow: 0 0 0 1px #409EFF inset !important;
+        }
+
+        .el-input__inner {
+          color: #e0e0e0 !important;
+          background-color: transparent !important;
+        }
+
+        .el-input__inner::placeholder {
+          color: #666 !important;
+        }
+
+        .el-textarea__inner {
+          background-color: #2d2d2d !important;
+          color: #e0e0e0 !important;
+          box-shadow: 0 0 0 1px #3a3a3a inset !important;
+        }
+
+        .el-textarea__inner:hover {
+          box-shadow: 0 0 0 1px #4a4a4a inset !important;
+        }
+
+        .el-textarea__inner:focus {
+          box-shadow: 0 0 0 1px #409EFF inset !important;
+        }
+
+        /* 数字输入框 */
+        .el-input-number {
+          --el-input-bg-color: #2d2d2d;
+          --el-input-border-color: #3a3a3a;
+          --el-input-text-color: #e0e0e0;
+        }
+
+        .el-input-number__decrease,
+        .el-input-number__increase {
+          background-color: #2d2d2d !important;
+          border-color: #3a3a3a !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-input-number__decrease:hover,
+        .el-input-number__increase:hover {
+          color: #409EFF !important;
+        }
+
+        /* Select 选择器 */
+        .el-select {
+          --el-select-input-focus-border-color: #409EFF;
+        }
+
+        .el-select-dropdown {
+          background-color: #2d2d2d !important;
+          border-color: #3a3a3a !important;
+        }
+
+        .el-select-dropdown__item {
+          color: #e0e0e0 !important;
+        }
+
+        .el-select-dropdown__item.hover,
+        .el-select-dropdown__item:hover {
+          background-color: #3a3a3a !important;
+        }
+
+        .el-select-dropdown__item.selected {
+          color: #409EFF !important;
+        }
+
+        .el-select__tags {
+          background-color: transparent !important;
+        }
+
+        .el-tag {
+          background-color: #3a3a3a !important;
+          border-color: #4a4a4a !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-tag .el-tag__close {
+          color: #888 !important;
+        }
+
+        .el-tag .el-tag__close:hover {
+          background-color: #4a4a4a !important;
+          color: #e0e0e0 !important;
+        }
+
+        /* Switch 开关 */
+        .el-switch__core {
+          background-color: #4a4a4a !important;
+          border-color: #4a4a4a !important;
+        }
+
+        .el-switch.is-checked .el-switch__core {
+          background-color: #409EFF !important;
+          border-color: #409EFF !important;
+        }
+
+        /* Slider 滑块 */
+        .el-slider__runway {
+          background-color: #3a3a3a !important;
+        }
+
+        .el-slider__bar {
+          background-color: #409EFF !important;
+        }
+
+        .el-slider__button {
+          border-color: #409EFF !important;
+        }
+
+        /* Radio 单选按钮 */
+        .el-radio {
+          color: #e0e0e0 !important;
+        }
+
+        .el-radio__inner {
+          background-color: #2d2d2d !important;
+          border-color: #4a4a4a !important;
+        }
+
+        .el-radio__input.is-checked .el-radio__inner {
+          background-color: #409EFF !important;
+          border-color: #409EFF !important;
+        }
+
+        /* Checkbox 多选框 */
+        .el-checkbox {
+          color: #e0e0e0 !important;
+        }
+
+        .el-checkbox__inner {
+          background-color: #2d2d2d !important;
+          border-color: #4a4a4a !important;
+        }
+
+        .el-checkbox__input.is-checked .el-checkbox__inner {
+          background-color: #409EFF !important;
+          border-color: #409EFF !important;
+        }
+
+        /* Divider 分隔线 */
+        .el-divider {
+          border-color: #3a3a3a !important;
+        }
+
+        .el-divider__text {
+          background-color: #242424 !important;
+          color: #888 !important;
+        }
+
+        /* Form 表单 */
+        .el-form-item__label {
+          color: #e0e0e0 !important;
+        }
+
+        /* Button 按钮 */
+        .el-button {
+          background-color: #2d2d2d !important;
+          border-color: #4a4a4a !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-button:hover {
+          background-color: #3a3a3a !important;
+          border-color: #5a5a5a !important;
+          color: #409EFF !important;
+        }
+
+        .el-button.is-disabled,
+        .el-button.is-disabled:hover {
+          background-color: #252525 !important;
+          border-color: #3a3a3a !important;
+          color: #555 !important;
+        }
+
+        .el-button--default {
+          background-color: #2d2d2d !important;
+          border-color: #4a4a4a !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-button--default:hover {
+          background-color: #3a3a3a !important;
+          border-color: #5a5a5a !important;
+          color: #409EFF !important;
+        }
+
+        /* Primary 按钮 */
+        .el-button--primary {
+          background-color: #409EFF !important;
+          border-color: #409EFF !important;
+          color: #fff !important;
+        }
+
+        .el-button--primary:hover {
+          background-color: #66b1ff !important;
+          border-color: #66b1ff !important;
+          color: #fff !important;
+        }
+
+        /* Success 按钮 */
+        .el-button--success {
+          background-color: #67C23A !important;
+          border-color: #67C23A !important;
+          color: #fff !important;
+        }
+
+        .el-button--success:hover {
+          background-color: #85ce61 !important;
+          border-color: #85ce61 !important;
+          color: #fff !important;
+        }
+
+        /* Warning 按钮 */
+        .el-button--warning {
+          background-color: #E6A23C !important;
+          border-color: #E6A23C !important;
+          color: #fff !important;
+        }
+
+        .el-button--warning:hover {
+          background-color: #ebb563 !important;
+          border-color: #ebb563 !important;
+          color: #fff !important;
+        }
+
+        /* Danger 按钮 */
+        .el-button--danger {
+          background-color: #F56C6C !important;
+          border-color: #F56C6C !important;
+          color: #fff !important;
+        }
+
+        .el-button--danger:hover {
+          background-color: #f78989 !important;
+          border-color: #f78989 !important;
+          color: #fff !important;
+        }
+
+        /* Info 按钮 */
+        .el-button--info {
+          background-color: #909399 !important;
+          border-color: #909399 !important;
+          color: #fff !important;
+        }
+
+        .el-button--info:hover {
+          background-color: #a6a9ad !important;
+          border-color: #a6a9ad !important;
+          color: #fff !important;
+        }
+
+        .el-button--primary.is-plain {
+          background-color: rgba(64, 158, 255, 0.1) !important;
+          border-color: #409EFF !important;
+          color: #409EFF !important;
+        }
+
+        .el-button--primary.is-plain:hover {
+          background-color: #409EFF !important;
+          color: #fff !important;
+        }
+
+        .el-button--info.is-plain {
+          background-color: rgba(144, 147, 153, 0.1) !important;
+          border-color: #909399 !important;
+          color: #909399 !important;
+        }
+
+        .el-button--info.is-plain:hover {
+          background-color: #909399 !important;
+          color: #fff !important;
+        }
+
+        .el-button--warning.is-plain {
+          background-color: rgba(230, 162, 60, 0.1) !important;
+          border-color: #E6A23C !important;
+          color: #E6A23C !important;
+        }
+
+        .el-button--warning.is-plain:hover {
+          background-color: #E6A23C !important;
+          color: #fff !important;
+        }
+
+        .el-button--danger.is-plain {
+          background-color: rgba(245, 108, 108, 0.1) !important;
+          border-color: #F56C6C !important;
+          color: #F56C6C !important;
+        }
+
+        .el-button--danger.is-plain:hover {
+          background-color: #F56C6C !important;
+          color: #fff !important;
+        }
+
+        .el-button--success.is-plain {
+          background-color: rgba(103, 194, 58, 0.1) !important;
+          border-color: #67C23A !important;
+          color: #67C23A !important;
+        }
+
+        .el-button--success.is-plain:hover {
+          background-color: #67C23A !important;
+          color: #fff !important;
+        }
+
+        /* ButtonGroup */
+        .el-button-group .el-button--default {
+          border-color: #4a4a4a !important;
+          background-color: #2d2d2d !important;
+          color: #e0e0e0 !important;
+        }
+
+        .el-button-group .el-button--default:hover {
+          background-color: #3a3a3a !important;
+          border-color: #5a5a5a !important;
+          color: #409EFF !important;
+        }
+
+        .el-button-group .el-button--default.is-disabled {
+          background-color: #252525 !important;
+          border-color: #3a3a3a !important;
+          color: #555 !important;
+        }
+
+        /* 表格固定单元格 - Element Plus 新版 */
+        .el-table .el-table__cell.is-fixed,
+        .el-table .el-table__cell.is-fixed-right {
+          background-color: #242424 !important;
+        }
+
+        .el-table th.el-table__cell.is-fixed,
+        .el-table th.el-table__cell.is-fixed-right {
+          background-color: #2d2d2d !important;
+        }
+
+        .el-table__row:hover>.el-table__cell.is-fixed,
+        .el-table__row:hover>.el-table__cell.is-fixed-right {
+          background-color: #2d2d2d !important;
+        }
+
+        /* 表格单元格通用 */
+        .el-table td.el-table__cell {
+          background-color: #242424 !important;
+        }
+
+        /* 确认框和消息框 */
+        .el-message-box {
+          background-color: #242424 !important;
+          border-color: #3a3a3a !important;
+        }
+
+        .el-message-box__title {
+          color: #e0e0e0 !important;
+        }
+
+        .el-message-box__content {
+          color: #ccc !important;
+        }
+
+        .el-message-box__headerbtn .el-message-box__close {
+          color: #888 !important;
+        }
+
+        /* Loading */
+        .el-loading-mask {
+          background-color: rgba(26, 26, 26, 0.9) !important;
+        }
+
+        .el-loading-text {
+          color: #e0e0e0 !important;
+        }
+
+        /* 时间选择器 */
+        .el-time-panel {
+          background-color: #242424 !important;
+          border-color: #3a3a3a !important;
+        }
+
+        .el-time-spinner__item {
+          color: #e0e0e0 !important;
+        }
+
+        .el-time-spinner__item:hover:not(.is-disabled):not(.is-active) {
+          background-color: #2d2d2d !important;
+        }
+
+        .el-time-spinner__item.is-active:not(.is-disabled) {
+          color: #409EFF !important;
+        }
+
+        .el-time-panel__footer {
+          border-top-color: #3a3a3a !important;
+        }
+
+        .el-picker-panel {
+          background-color: #242424 !important;
+          border-color: #3a3a3a !important;
+        }
+
+        .el-picker-panel__footer {
+          background-color: #242424 !important;
+          border-top-color: #3a3a3a !important;
+        }
+
+        /* Dropdown */
+        .el-dropdown-menu {
+          background-color: #242424 !important;
+          border-color: #3a3a3a !important;
+        }
+
+        .el-dropdown-menu__item {
+          color: #e0e0e0 !important;
+        }
+
+        .el-dropdown-menu__item:hover {
+          background-color: #2d2d2d !important;
+          color: #409EFF !important;
+        }
+
+        /* 分组管理页提示文字 */
+        .groups-manager>div {
+          color: #888 !important;
         }
 
         << end>>@keyframes spin {
@@ -518,10 +1154,27 @@
 
         .mobile-card-header {
           border-bottom-color: #3a3a3a;
+          color: #e0e0e0;
+        }
+
+        .mobile-card-row label {
+          color: #888;
+        }
+
+        .mobile-card-value {
+          color: #ccc;
         }
 
         .mobile-card-actions {
           border-top-color: #3a3a3a;
+        }
+
+        .mobile-delete-btn {
+          color: #888 !important;
+        }
+
+        .mobile-delete-btn:hover {
+          color: #F56C6C !important;
         }
 
         << end>>
@@ -697,61 +1350,72 @@
 
         /* Dark Mode Support */
         << if .DarkMode>>.password-dialog.el-dialog {
-          background: #1f2937 !important;
+          background: #242424 !important;
         }
 
         .password-dialog .el-dialog__header {
-          background: #1f2937 !important;
+          background: #242424 !important;
         }
 
         .password-dialog .el-dialog__title {
-          color: #f3f4f6;
+          color: #e0e0e0;
         }
 
         .password-dialog .el-dialog__close {
-          color: #6b7280;
+          color: #888;
         }
 
         .password-dialog .el-dialog__close:hover {
-          color: #9ca3af;
+          color: #409EFF;
         }
 
         .password-icon {
-          background: #374151;
+          background: #3a3a3a;
         }
 
         .password-icon svg {
-          color: #9ca3af;
+          color: #888;
         }
 
         .password-input-wrapper .el-input__wrapper {
-          background: #374151 !important;
-          box-shadow: 0 0 0 1px #4b5563 inset !important;
+          background: #2d2d2d !important;
+          box-shadow: 0 0 0 1px #3a3a3a inset !important;
         }
 
         .password-input-wrapper .el-input__wrapper:hover {
-          box-shadow: 0 0 0 1px #6b7280 inset !important;
+          box-shadow: 0 0 0 1px #4a4a4a inset !important;
         }
 
         .password-input-wrapper .el-input__inner {
-          color: #f3f4f6 !important;
+          color: #e0e0e0 !important;
+        }
+
+        .password-dialog .el-dialog__body {
+          background: #242424 !important;
+        }
+
+        .password-dialog .el-dialog__footer {
+          background: #242424 !important;
         }
 
         .dialog-footer .el-button:first-child {
-          background: #374151;
-          color: #d1d5db;
+          background: #3a3a3a;
+          color: #ccc;
+          border-color: #4a4a4a;
         }
 
         .dialog-footer .el-button:first-child:hover {
-          background: #4b5563;
+          background: #4a4a4a;
+          color: #e0e0e0;
         }
 
         .dialog-footer .el-button--primary {
-          background: #4b5563;
+          background: #4a4a4a;
+          border-color: #5a5a5a;
         }
 
         .dialog-footer .el-button--primary:hover {
-          background: #6b7280;
+          background: #5a5a5a;
         }
 
         <<end>>
@@ -1049,19 +1713,79 @@
           <!-- General Settings Tab -->
           <el-tab-pane label="基础设置" name="general">
             <el-form :label-position="isPc ? 'right' : 'top'" :label-width="isPc ? '120px' : 'auto'">
-              <el-form-item label="自动刷新(分钟)">
-                <el-input-number v-model="config.refresh" :min="0" :max="1440"></el-input-number>
-                <div class="tip">设为0则关闭自动刷新</div>
+              <el-form-item label="强制夜间模式">
+                <el-switch v-model="config.darkMode"></el-switch>
+                <div class="tip">开启后将始终使用深色主题</div>
               </el-form-item>
-              <el-form-item label="夜间模式开始">
-                <el-time-picker v-model="nightStartTime" placeholder="选择时间" value-format="HH:mm:ss"></el-time-picker>
+
+              <el-form-item label="自动夜间模式">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <el-time-picker v-model="nightStartTime" placeholder="开始时间" value-format="HH:mm:ss"
+                    style="flex: 1"></el-time-picker>
+                  <span>至</span>
+                  <el-time-picker v-model="nightEndTime" placeholder="结束时间" value-format="HH:mm:ss"
+                    style="flex: 1"></el-time-picker>
+                </div>
+                <div class="tip">在此时间段内将自动切换为深色主题</div>
               </el-form-item>
-              <el-form-item label="夜间模式结束">
-                <el-time-picker v-model="nightEndTime" placeholder="选择时间" value-format="HH:mm:ss"></el-time-picker>
-              </el-form-item>
+
+
+
               <el-form-item label="设置密码">
                 <el-input v-model="config.password" show-password placeholder="留空则不设置密码"></el-input>
               </el-form-item>
+
+              <el-form-item label="免密时长(小时)">
+                <el-input-number v-model="config.sessionDuration" :min="0" :max="720"></el-input-number>
+                <div class="tip">验证通过后，在此时间内无需再次输入密码（设为 0 则默认 24 小时）</div>
+              </el-form-item>
+
+              <el-divider content-position="left">抓取计划</el-divider>
+              <div style="margin-bottom: 20px;">
+                <el-table :data="config.schedules" border style="width: 100%" size="mini">
+                  <el-table-column label="开始时间" width="140">
+                    <template #default="scope">
+                      <el-time-picker v-model="scope.row.startTime" placeholder="开始" value-format="HH:mm:ss"
+                        style="width: 100%"></el-time-picker>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="结束时间" width="140">
+                    <template #default="scope">
+                      <el-time-picker v-model="scope.row.endTime" placeholder="结束" value-format="HH:mm:ss"
+                        style="width: 100%"></el-time-picker>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="基频(分)" width="100">
+                    <template #default="scope">
+                      <el-input-number v-model="scope.row.baseRefresh" :min="0" :max="1440" controls-position="right"
+                        style="width: 100%"></el-input-number>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="默认倍数" width="100">
+                    <template #default="scope">
+                      <el-input-number v-model="scope.row.defaultCount" :min="0" :max="100" controls-position="right"
+                        style="width: 100%"></el-input-number>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作">
+                    <template #default="scope">
+                      <el-button type="text" size="mini" @click="config.schedules.splice(scope.$index, 1)"
+                        style="color: #F56C6C">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-button type="primary" plain size="small"
+                  @click="config.schedules.push({startTime: '00:00:00', endTime: '08:00:00', baseRefresh: 10, defaultCount: 6})"
+                  style="width: 100%; margin-top: 10px;">
+                  添加时段规则
+                </el-button>
+                <div class="tip" style="margin-top: 10px;">
+                  设定“基准频率 × 默认倍数”作为此时段的刷新间隔。若计算结果为 0 表示暂停更新。<br />
+                  规则按顺序从上往下匹配，第一个匹配当前时间的规则生效。<br />
+                  <strong>如果当前时间不匹配任何规则，将不会进行自动刷新。</strong>
+                </div>
+              </div>
+
             </el-form>
           </el-tab-pane>
 
@@ -1256,6 +1980,12 @@
             <el-input-number v-model="currentEditingFeed.maxItems" :min="0" :max="500"
               placeholder="0"></el-input-number>
             <div class="tip">限制从RSS源读取的最大条目数 (0表示不限制)</div>
+          </el-form-item>
+
+          <el-form-item label="刷新倍数">
+            <el-input-number v-model="currentEditingFeed.refreshCount" :min="0" :max="100"
+              placeholder="0"></el-input-number>
+            <div class="tip">时段规则生效时的间隔倍数 (0为默认)，最终间隔 = 基准频率 × 此倍数</div>
           </el-form-item>
 
           <el-form-item label="缓存条数">
@@ -1485,13 +2215,8 @@
         </el-row>
       </el-main>
       <el-footer>
-
-        << if gt .ReFresh 0>>
-          <span class="footer-countdown">下次更新: <span class="refresh-all-link" @click="refreshAll" title="点击刷新所有源">{{
-              nextUpdateTime }}</span></span>
-          << end>>
-            <span v-if="!refreshInterval" class="footer-countdown"><span class="refresh-all-link" @click="refreshAll"
-                title="点击刷新所有源">刷新全部</span></span>
+        <span class="footer-countdown">下次更新: <span class="refresh-all-link" @click="refreshAll" title="点击刷新所有源">{{
+            nextUpdateTime }}</span></span>
       </el-footer>
     </el-container>
   </div>
@@ -1512,10 +2237,10 @@
           groups: << if .Groups >><< .Groups | json >><< else >> ['关注'] << end >>,
           showSEOFlag: false,
           fullscreenLoading: true,
-          countdown: 0,
+          countdown: -1,
           targetTimeStr: '<< .NextUpdateTime >>',
           isPc: true,
-          refreshInterval: << .ReFresh >>,
+          refreshInterval: 0,
           nextUpdateTime: '',
           readItems: new Set(),
 
@@ -1553,6 +2278,7 @@
           touchStartX: 0,
           touchStartY: 0,
           clearingCache: null, // 用于跟踪正在清除的缓存类型
+          authToken: localStorage.getItem('rss_auth_token') || '',
         };
       },
       computed: {
@@ -1620,7 +2346,7 @@
           return dateStr;
         },
         updateCountdown() {
-          if (this.refreshInterval === 0) return;
+          if (this.countdown < 0) return;
 
           const minutes = Math.floor(this.countdown / 60);
 
@@ -1810,15 +2536,21 @@
         // Settings Methods
         openSettings() {
           // Check if password needed
+          const token = this.authToken;
           fetch('/api/check-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: '' })
+            body: JSON.stringify({ password: '', token: token })
           }).then(async res => {
             if (res.ok) {
-              // No password or empty password
+              // No password or empty password or valid token
               this.fetchConfig();
             } else {
+              // If we had a token but still failed, it might be expired
+              if (token) {
+                this.authToken = '';
+                localStorage.removeItem('rss_auth_token');
+              }
               this.showPasswordModal = true;
               this.passwordInput = '';
             }
@@ -1838,6 +2570,11 @@
             body: JSON.stringify({ password: this.passwordInput })
           });
           if (res.ok) {
+            const data = await res.json();
+            if (data.token) {
+              this.authToken = data.token;
+              localStorage.setItem('rss_auth_token', data.token);
+            }
             this.showPasswordModal = false;
             this.fetchConfig(this.passwordInput);
           } else {
@@ -1849,7 +2586,7 @@
             const res = await fetch('/api/get-config', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ password })
+              body: JSON.stringify({ password, token: this.authToken })
             });
             if (res.ok) {
               this.config = await res.json();
@@ -1878,9 +2615,15 @@
               });
               this.editingGroups = this.config.groupOrder.map(g => ({ name: g }));
 
-              if (!this.config.aiFilter) this.config.aiFilter = { enabled: false };
-              this.nightStartTime = this.config.nightStartTime;
-              this.nightEndTime = this.config.nightEndTime;
+              // 初始化 schedules
+              if (!this.config.schedules) this.config.schedules = [];
+              this.config.schedules.forEach(s => {
+                if (s.baseRefresh === undefined) s.baseRefresh = 0;
+                if (s.defaultCount === undefined) s.defaultCount = 0;
+              });
+
+              this.nightStartTime = this.config.nightStartTime || '';
+              this.nightEndTime = this.config.nightEndTime || '';
               this.showConfigModal = true;
             } else {
               this.$message.error('获取配置失败');
@@ -1902,6 +2645,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 password: this.passwordInput, // Use the one entered
+                token: this.authToken,
                 config: this.config
               })
             });
@@ -1970,6 +2714,7 @@
           // Init maxItems and cacheItems (直接使用 row 的值，el-input-number 会处理 undefined)
           if (row.maxItems === undefined) row.maxItems = 0;
           if (row.cacheItems === undefined) row.cacheItems = 0;
+          if (row.refreshCount === undefined) row.refreshCount = 0;
 
           // Init temp vars from row
           if (!row.filter) {
@@ -2027,6 +2772,9 @@
           }
           if (this.currentEditingFeed.cacheItems === 0 || this.currentEditingFeed.cacheItems === null) {
             this.currentEditingFeed.cacheItems = undefined;
+          }
+          if (this.currentEditingFeed.refreshCount === 0 || this.currentEditingFeed.refreshCount === null) {
+            this.currentEditingFeed.refreshCount = undefined;
           }
 
           // Construct filter object
@@ -2302,14 +3050,21 @@
         window.addEventListener('resize', this.checkIsPc);
 
         // Calculate countdown based on target time
-        if (this.targetTimeStr && this.refreshInterval > 0) {
+        if (this.targetTimeStr) {
           const target = new Date(this.targetTimeStr);
-          const now = new Date();
-          let diff = Math.floor((target - now) / 1000);
-          if (diff < 0) diff = 0;
-          this.countdown = diff;
-        } else if (this.refreshInterval > 0) {
-          this.countdown = this.refreshInterval * 60;
+          // Check if valid date and year > 2000 (valid schedule)
+          if (!isNaN(target.getTime()) && target.getFullYear() > 2000) {
+            const now = new Date();
+            let diff = Math.floor((target - now) / 1000);
+            if (diff < 0) diff = 0;
+            this.countdown = diff;
+          } else {
+            this.countdown = -1;
+            this.nextUpdateTime = '暂无自动更新计划';
+          }
+        } else {
+          this.countdown = -1;
+          this.nextUpdateTime = '暂无自动更新计划';
         }
         // 初始化倒计时显示
         this.updateCountdown();
@@ -2360,22 +3115,20 @@
             setInterval(sendHeartbeat, 60000);
           }
           // 倒计时更新（无论是否PC都显示）
-          if (this.refreshInterval > 0) {
-            const timer = setInterval(() => {
-              if (this.countdown > 0) {
-                this.countdown--;
-                this.updateCountdown();
-              } else {
-                // 倒计时结束
-                clearInterval(timer);
-                this.nextUpdateTime = '即将刷新...';
-                // 5秒后刷新页面
-                setTimeout(() => {
-                  location.reload();
-                }, 5000);
-              }
-            }, 1000);
-          }
+          const timer = setInterval(() => {
+            if (this.countdown > 0) {
+              this.countdown--;
+              this.updateCountdown();
+            } else if (this.countdown === 0) {
+              // 倒计时结束
+              clearInterval(timer);
+              this.nextUpdateTime = '即将刷新...';
+              // 5秒后刷新页面
+              setTimeout(() => {
+                location.reload();
+              }, 5000);
+            }
+          }, 1000);
         };
         connect();
 

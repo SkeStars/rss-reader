@@ -45,8 +45,10 @@
         "https://www.geekpark.net/rss",
         "https://hostloc.com/forum.php?mod=rss&fid=45&auth=389ec3vtQanmEuRoghE%2FpZPWnYCPmvwWgSa7RsfjbQ%2BJpA%2F6y6eHAx%2FKqtmPOg"
     ],
-    "refresh": 6,
-    "autoUpdatePush": 7,
+    "schedules": [
+        {"startTime": "08:00:00", "endTime": "23:00:00", "refresh": 45},
+        {"startTime": "23:00:00", "endTime": "08:00:00", "refresh": 0}
+    ],
     "nightStartTime": "06:30:00",
     "nightEndTime": "19:30:00"
 }
@@ -55,10 +57,21 @@
 名称 | 说明
 -|-
 values | rss订阅链接（必填）
-refresh | rss订阅更新时间间隔，单位分钟（必填）
-autoUpdatePush | 自动刷新间隔，默认为0，不开启。效果为前端每autoUpdatePush分钟自动更新页面信息，单位分钟（非必填）
+schedules | 抓取计划规则数组。定义不同时间段的刷新频率（非必填）
 nightStartTime | 日间开始时间 ，如 06:30:00
 nightEndTime | 日间结束时间，如 19:30:00
+
+## 抓取计划规则
+
+schedules 数组中的每条规则支持以下字段：
+
+字段 | 说明
+-|-
+startTime | 开始时间，格式 HH:mm:ss（必填）
+endTime | 结束时间，格式 HH:mm:ss（必填）
+refresh | 刷新频率，单位分钟。设为 0 表示该时段暂停抓取
+
+**优先级**：规则按顺序从上往下匹配，第一个匹配当前时间的规则生效。如果当前时间不匹配任何规则，将不会进行自动刷新。
 
 ## 榜单模式
 

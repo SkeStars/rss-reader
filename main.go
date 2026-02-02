@@ -28,6 +28,15 @@ func main() {
 	
 	go utils.UpdateFeeds()
 	go utils.WatchConfigFileChanges("config.json")
+	
+	// 定期清理过期 Token
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		for range ticker.C {
+			globals.CleanupExpiredTokens()
+		}
+	}()
+
 	http.HandleFunc("/feeds", getFeedsHandler)
 	http.HandleFunc("/ws", wsHandler)
 	// http.HandleFunc("/", serveHome)
@@ -71,11 +80,24 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 判断现在是否是夜间
-	formattedTime := time.Now().Format("15:04:05")
-	darkMode := false
+	// 从配置中获取夜间模式设置
+	darkMode := globals.RssUrls.DarkMode
+	
+	// 如果设置了时间，则根据时间自动判断
 	if globals.RssUrls.NightStartTime != "" && globals.RssUrls.NightEndTime != "" {
-		if globals.RssUrls.NightStartTime > formattedTime || formattedTime > globals.RssUrls.NightEndTime {
+		now := time.Now().Format("15:04:05")
+		start := globals.RssUrls.NightStartTime
+		end := globals.RssUrls.NightEndTime
+		
+		isNight := false
+		if start < end {
+			isNight = now >= start && now <= end
+		} else {
+			// 跨天情况
+			isNight = now >= start || now <= end
+		}
+		
+		if isNight {
 			darkMode = true
 		}
 	}
@@ -93,7 +115,6 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		Keywords       string
 		RssDataList    []models.Feed
 		DarkMode       bool
-		ReFresh        int
 		Groups         []string
 		DefaultGroup   string
 		NextUpdateTime string
@@ -101,7 +122,6 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		Keywords:       getKeywordsFromFeeds(allFeeds),
 		RssDataList:    allFeeds,
 		DarkMode:       darkMode,
-		ReFresh:        globals.RssUrls.ReFresh,
 		Groups:         getGroups(allFeeds),
 		DefaultGroup:   globals.RssUrls.DefaultGroup,
 		NextUpdateTime: nextUpdate.Format(time.RFC3339),
@@ -378,6 +398,7 @@ func checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Password string `json:"password"`
+		Token    string `json:"token"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -385,17 +406,31 @@ func checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
+	// 如果没有设置密码，直接返回成功
 	if globals.RssUrls.Password == "" {
-		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"success":true}`))
 		return
 	}
 
-	if req.Password == globals.RssUrls.Password {
-		w.Header().Set("Content-Type", "application/json")
+	// 尝试验证 Token
+	if req.Token != "" && globals.ValidateAuthToken(req.Token) {
 		w.Write([]byte(`{"success":true}`))
+		return
+	}
+
+	// 验证密码
+	if req.Password == globals.RssUrls.Password {
+		// 生成 Token
+		token := globals.GenerateAuthToken(globals.RssUrls.GetSessionDuration())
+		
+		response := map[string]interface{}{
+			"success": true,
+			"token":   token,
+		}
+		json.NewEncoder(w).Encode(response)
 	} else {
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"success":false, "message":"Password incorrect"}`))
 	}
@@ -410,6 +445,7 @@ func getConfigHandler(w http.ResponseWriter, r *http.Request) {
 	
 	var req struct {
 		Password string `json:"password"`
+		Token    string `json:"token"`
 	}
 	
 	if globals.RssUrls.Password != "" {
@@ -417,7 +453,16 @@ func getConfigHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		if req.Password != globals.RssUrls.Password {
+		
+		authorized := false
+		// 优先验证 Token
+		if req.Token != "" && globals.ValidateAuthToken(req.Token) {
+			authorized = true
+		} else if req.Password == globals.RssUrls.Password {
+			authorized = true
+		}
+
+		if !authorized {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -436,6 +481,7 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Password string        `json:"password"`
+		Token    string        `json:"token"`
 		Config   models.Config `json:"config"`
 	}
 
@@ -444,10 +490,19 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 验证旧密码
-	if globals.RssUrls.Password != "" && req.Password != globals.RssUrls.Password {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+	// 验证权限
+	if globals.RssUrls.Password != "" {
+		authorized := false
+		if req.Token != "" && globals.ValidateAuthToken(req.Token) {
+			authorized = true
+		} else if req.Password == globals.RssUrls.Password {
+			authorized = true
+		}
+
+		if !authorized {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 	}
 
 	if err := utils.SaveConfig(req.Config); err != nil {

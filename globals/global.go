@@ -53,6 +53,10 @@ var (
 
 	// 缓存的页面模板
 	Tpl *template.Template
+
+	// 认证 Token 存储: map[token] -> 过期时间
+	AuthTokens     map[string]time.Time
+	AuthTokensLock sync.RWMutex
 )
 
 type userAgentTransport struct {
@@ -87,6 +91,7 @@ func Init() {
 	FilterCache = make(map[string]models.FilterCacheEntry)
 	ReadState = make(map[string]int64)
 	ItemsCache = make(map[string][]models.Item)
+	AuthTokens = make(map[string]time.Time)
 
 	// 初始化模板
 	InitTemplate()
@@ -223,4 +228,66 @@ func shouldFilterURL(urlFilter, folderFilter *models.FilterStrategy) bool {
 		return folderFilter.IsKeywordEnabled() || folderFilter.IsAIEnabled()
 	}
 	return false
+}
+
+// GenerateAuthToken 生成认证 token 并存储
+func GenerateAuthToken(durationHours int) string {
+	// 生成随机 token
+	token := generateRandomToken()
+	expiry := time.Now().Add(time.Duration(durationHours) * time.Hour)
+	
+	AuthTokensLock.Lock()
+	AuthTokens[token] = expiry
+	AuthTokensLock.Unlock()
+	
+	return token
+}
+
+// ValidateAuthToken 验证 token 是否有效
+func ValidateAuthToken(token string) bool {
+	if token == "" {
+		return false
+	}
+	
+	AuthTokensLock.RLock()
+	expiry, exists := AuthTokens[token]
+	AuthTokensLock.RUnlock()
+	
+	if !exists {
+		return false
+	}
+	
+	if time.Now().After(expiry) {
+		// Token 已过期，删除它
+		AuthTokensLock.Lock()
+		delete(AuthTokens, token)
+		AuthTokensLock.Unlock()
+		return false
+	}
+	
+	return true
+}
+
+// CleanupExpiredTokens 清理过期的 token
+func CleanupExpiredTokens() {
+	AuthTokensLock.Lock()
+	defer AuthTokensLock.Unlock()
+	
+	now := time.Now()
+	for token, expiry := range AuthTokens {
+		if now.After(expiry) {
+			delete(AuthTokens, token)
+		}
+	}
+}
+
+// generateRandomToken 生成随机 token
+func generateRandomToken() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 32)
+	for i := range b {
+		b[i] = charset[time.Now().UnixNano()%int64(len(charset))]
+		time.Sleep(time.Nanosecond) // 确保每个字符不同
+	}
+	return string(b)
 }

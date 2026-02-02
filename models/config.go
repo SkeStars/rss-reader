@@ -109,6 +109,14 @@ func (c AIFilterConfig) GetConcurrency() int {
 	return c.Concurrency
 }
 
+// FetchSchedule 抓取计划规则
+type FetchSchedule struct {
+	StartTime    string `json:"startTime"`    // HH:mm:ss
+	EndTime      string `json:"endTime"`      // HH:mm:ss
+	BaseRefresh  int    `json:"baseRefresh"`  // 基准频率 (分钟)
+	DefaultCount int    `json:"defaultCount"` // 默认次数
+}
+
 // FilterStrategy 过滤策略配置
 type FilterStrategy struct {
 	// 是否启用关键词过滤
@@ -199,6 +207,8 @@ type FeedSource struct {
 	Group string `json:"group,omitempty"`
 	// 后处理配置
 	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
+	// 自定义刷新次数，与时段规则中的基准频率相乘
+	RefreshCount int `json:"refreshCount,omitempty"`
 }
 
 // FeedURL 表示文件夹内的单个RSS源
@@ -216,6 +226,8 @@ type FeedURL struct {
 	CacheItems int `json:"cacheItems,omitempty"`
 	// 后处理配置
 	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
+	// 自定义刷新次数，与时段规则中的基准频率相乘
+	RefreshCount int `json:"refreshCount,omitempty"`
 }
 
 // IsFolder 判断是否为文件夹类型
@@ -225,11 +237,18 @@ func (f FeedSource) IsFolder() bool {
 
 type Config struct {
 	Sources        []FeedSource   `json:"sources,omitempty"`
-	ReFresh        int            `json:"refresh"`
-	NightStartTime string         `json:"nightStartTime"`
-	NightEndTime   string         `json:"nightEndTime"`
+	// 抓取计划规则列表
+	Schedules []FetchSchedule `json:"schedules,omitempty"`
+	// 夜间模式起始时间
+	NightStartTime string `json:"nightStartTime,omitempty"`
+	// 夜间模式结束时间
+	NightEndTime string `json:"nightEndTime,omitempty"`
+	// 是否启用夜间模式 (手动覆盖)
+	DarkMode bool `json:"darkMode,omitempty"`
 	// Settings password
 	Password string `json:"password,omitempty"`
+	// Session duration in hours (default: 24)
+	SessionDuration int `json:"sessionDuration,omitempty"`
 	// AI过滤配置
 	AIFilter AIFilterConfig `json:"aiFilter,omitempty"`
 	// 分组顺序（可选，如果不设置则按订阅源出现顺序）
@@ -271,4 +290,12 @@ func (older Config) GetIncrement(newer Config) []string {
 	}
 
 	return increment
+}
+
+// GetSessionDuration 获取会话有效期（小时），默认为 24
+func (c Config) GetSessionDuration() int {
+	if c.SessionDuration <= 0 {
+		return 24
+	}
+	return c.SessionDuration
 }

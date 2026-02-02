@@ -15,36 +15,106 @@ import (
 	"fmt"
 )
 
-func UpdateFeeds() {
-	if globals.RssUrls.ReFresh <= 0 {
-		return
-	}
-	refreshDuration := time.Duration(globals.RssUrls.ReFresh) * time.Minute
-	
-    // Set initial next update time
-	globals.Lock.Lock()
-    globals.NextUpdateTime = time.Now().Add(refreshDuration)
-	globals.Lock.Unlock()
+var (
+	lastUpdateTimes = make(map[string]time.Time)
+	lutLock         sync.Mutex
+	// 限制全局并发更新数，防止启动时并发过高 (Default: 5)
+	feedUpdateSemaphore = make(chan struct{}, 5)
+)
 
-	var (
-		tick = time.Tick(refreshDuration)
-	)
+func getEffectiveInterval(rssURL string, sourceRefreshCount int) (int, string) {
+	now := time.Now().Format("15:04:05")
+
+	// 检查时间段规则 (Schedules)
+	for _, s := range globals.RssUrls.Schedules {
+		// 跳过无效的时间规则
+		if s.StartTime == "" || s.EndTime == "" || s.StartTime == s.EndTime {
+			continue
+		}
+		
+		match := false
+		if s.StartTime < s.EndTime {
+			match = now >= s.StartTime && now <= s.EndTime
+		} else {
+			// 跨天情况 (例如 22:00:00 到 08:00:00)
+			match = now >= s.StartTime || now <= s.EndTime
+		}
+
+		if match {
+			// 使用基频+次数逻辑
+			count := s.DefaultCount
+			if sourceRefreshCount > 0 {
+				count = sourceRefreshCount
+			}
+			interval := s.BaseRefresh * count
+			return interval, fmt.Sprintf("时段规则 (%s-%s, 基频:%d, 次数:%d)", s.StartTime, s.EndTime, s.BaseRefresh, count)
+		}
+	}
+
+	// 没有匹配任何规则，不刷新
+	return 0, "未匹配规则"
+}
+
+func UpdateFeeds() {
 	for {
-		formattedTime := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
+		formattedTime := now.Format("2006-01-02 15:04:05")
+
+		var nextGlobalUpdate time.Time
+
+		// 获取当前所有URL的刷新需求
 		for _, source := range globals.RssUrls.Sources {
 			if source.IsFolder() {
 				for _, feedUrl := range source.Urls {
-					go UpdateFeed(feedUrl.URL, formattedTime, false)
+					processFeedUpdate(feedUrl.URL, feedUrl.RefreshCount, formattedTime, now, &nextGlobalUpdate)
 				}
 			} else if source.URL != "" {
-				go UpdateFeed(source.URL, formattedTime, false)
+				processFeedUpdate(source.URL, source.RefreshCount, formattedTime, now, &nextGlobalUpdate)
 			}
 		}
-		<-tick
-		
-		globals.Lock.Lock()
-		globals.NextUpdateTime = time.Now().Add(refreshDuration)
-		globals.Lock.Unlock()
+
+		// 更新全局下次更新时间
+		if !nextGlobalUpdate.IsZero() {
+			globals.Lock.Lock()
+			globals.NextUpdateTime = nextGlobalUpdate
+			globals.Lock.Unlock()
+		}
+
+		time.Sleep(30 * time.Second) // 每30秒检查一次，权衡性能与精度
+	}
+}
+
+func processFeedUpdate(urlBack string, sourceRefreshCount int, formattedTime string, now time.Time, nextGlobalUpdate *time.Time) {
+	interval, _ := getEffectiveInterval(urlBack, sourceRefreshCount)
+
+	if interval <= 0 {
+		return
+	}
+
+	lutLock.Lock()
+	lastUpdate, ok := lastUpdateTimes[urlBack]
+	lutLock.Unlock()
+
+	intervalDuration := time.Duration(interval) * time.Minute
+
+	if !ok || now.Sub(lastUpdate) >= intervalDuration {
+		// 执行更新
+		go UpdateFeed(urlBack, formattedTime, false)
+
+		lutLock.Lock()
+		lastUpdateTimes[urlBack] = now
+		lutLock.Unlock()
+
+		nextUpdate := now.Add(intervalDuration)
+		if nextGlobalUpdate.IsZero() || nextUpdate.Before(*nextGlobalUpdate) {
+			*nextGlobalUpdate = nextUpdate
+		}
+	} else {
+		// 计算该源的下次更新时间，用于确定全局下次更新时间
+		nextUpdate := lastUpdate.Add(intervalDuration)
+		if nextGlobalUpdate.IsZero() || nextUpdate.Before(*nextGlobalUpdate) {
+			*nextGlobalUpdate = nextUpdate
+		}
 	}
 }
 
@@ -111,6 +181,10 @@ func UpdateFeed(url, formattedTime string, isManual bool) error {
 
 // UpdateFeedWithOptions 更新Feed，支持强制重新处理选项
 func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReprocess bool) error {
+	// 获取并发锁，限制同时进行的抓取任务数量
+	feedUpdateSemaphore <- struct{}{}
+	defer func() { <-feedUpdateSemaphore }()
+
 	prefix := "[订阅更新]"
 	if isManual {
 		prefix = "[手动刷新]"
@@ -139,8 +213,15 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 	cache, ok := globals.DbMap[url]
 	globals.Lock.RUnlock()
 
+	// 应用最大条目数限制（提前准备用于比对的切片）
+	maxItems := GetMaxItems(url)
+	checkItems := result.Items
+	if maxItems > 0 && len(checkItems) > maxItems {
+		checkItems = checkItems[:maxItems]
+	}
+
 	shouldUpdateDisplayTime := true
-	if ok && len(result.Items) > 0 && !forceReprocess {
+	if ok && len(checkItems) > 0 && !forceReprocess {
 		isChanged := false
 		hasNewItems := false
 		
@@ -149,7 +230,7 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 		for _, link := range cache.AllItemLinks {
 			oldLinksMap[link] = true
 		}
-		for _, item := range result.Items {
+		for _, item := range checkItems {
 			if !oldLinksMap[item.Link] {
 				hasNewItems = true
 				isChanged = true
@@ -159,10 +240,10 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 
 		// 如果还没有发现新文章，检查顺序或标题是否变化
 		if !isChanged {
-			if len(result.Items) != len(cache.AllItemLinks) || len(result.Items) != len(cache.AllItemTitles) {
+			if len(checkItems) != len(cache.AllItemLinks) || len(checkItems) != len(cache.AllItemTitles) {
 				isChanged = true
 			} else {
-				for i, item := range result.Items {
+				for i, item := range checkItems {
 					if item.Link != cache.AllItemLinks[i] || item.Title != cache.AllItemTitles[i] {
 						isChanged = true
 						break
@@ -214,7 +295,7 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 	}
 
 	// 应用最大条目数限制
-	maxItems := GetMaxItems(url)
+	// maxItems 已经在上面获取过了
 	if maxItems > 0 && len(allItems) > maxItems {
 		allItems = allItems[:maxItems]
 	}
