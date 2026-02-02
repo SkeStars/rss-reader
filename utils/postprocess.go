@@ -39,6 +39,21 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 		return items
 	}
 
+	// 记录开始日志
+	mode := config.GetMode()
+	modifyFields := []string{}
+	if config.ModifyTitle {
+		modifyFields = append(modifyFields, "标题")
+	}
+	if config.ModifyLink {
+		modifyFields = append(modifyFields, "链接")
+	}
+	if config.ModifyPubDate {
+		modifyFields = append(modifyFields, "发布时间")
+	}
+	log.Printf("[后处理开始] 源 [%s] | 模式: %s | 待处理: %d 条 | 修改字段: %s",
+		rssURL, mode, len(items), strings.Join(modifyFields, ", "))
+
 	// 获取并发数（复用AI过滤的并发配置）
 	concurrency := globals.RssUrls.AIFilter.GetConcurrency()
 	if concurrency > len(items) {
@@ -112,6 +127,21 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 						}
 						result.item = processedItem
 
+						// 记录成功处理的详细信息
+						changes := []string{}
+						if config.ModifyTitle && processedItem.Title != job.item.Title {
+							changes = append(changes, fmt.Sprintf("标题: [%s] -> [%s]", truncateString(job.item.Title, 20), truncateString(processedItem.Title, 20)))
+						}
+						if config.ModifyLink && processedItem.Link != job.item.Link {
+							changes = append(changes, fmt.Sprintf("链接已修改"))
+						}
+						if config.ModifyPubDate && processedItem.PubDate != job.item.PubDate {
+							changes = append(changes, fmt.Sprintf("时间: [%s] -> [%s]", job.item.PubDate, processedItem.PubDate))
+						}
+						if len(changes) > 0 {
+							log.Printf("[后处理成功] 条目 [%s] | %s", truncateString(job.item.Title, 30), strings.Join(changes, ", "))
+						}
+
 						// 存入缓存（使用原始链接作为 key）
 						entry := models.PostProcessCacheEntry{
 							ProcessedAt: time.Now().Format("2006-01-02 15:04:05"),
@@ -177,13 +207,20 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 		processedItems = append(processedItems, result.item)
 	}
 
-	// 只在有新处理时展示统计
-	if newItems > 0 || failedItems > 0 {
-		log.Printf("[后处理统计] 源 [%s]: 并发数 %d，新处理 %d 篇，失败 %d 篇 | 缓存命中 %d 篇",
-			rssURL, concurrency, newItems, failedItems, cacheHits)
-	}
+	// 展示统计（无论是否有新处理都展示，方便追踪）
+	log.Printf("[后处理完成] 源 [%s] | 新处理: %d 篇, 失败: %d 篇, 缓存命中: %d 篇 | 总计: %d 篇",
+		rssURL, newItems, failedItems, cacheHits, len(items))
 
 	return processedItems
+}
+
+// truncateString 截断字符串，添加省略号
+func truncateString(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+	return string(runes[:maxLen]) + "..."
 }
 
 // getPostProcessConfig 获取指定URL的后处理配置

@@ -111,8 +111,10 @@ func (c AIFilterConfig) GetConcurrency() int {
 
 // FilterStrategy 过滤策略配置
 type FilterStrategy struct {
-	// 是否启用过滤（覆盖全局设置）
-	Enabled *bool `json:"enabled,omitempty"`
+	// 是否启用关键词过滤
+	KeywordEnabled *bool `json:"keywordEnabled,omitempty"`
+	// 是否启用AI过滤
+	AIEnabled *bool `json:"aiEnabled,omitempty"`
 	// 自定义提示词（覆盖全局设置）
 	CustomPrompt string `json:"customPrompt,omitempty"`
 	// 自定义阈值（覆盖全局设置）
@@ -123,12 +125,20 @@ type FilterStrategy struct {
 	KeepKeywords []string `json:"keepKeywords,omitempty"`
 }
 
-// IsEnabled 检查是否启用过滤
-func (f FilterStrategy) IsEnabled(globalEnabled bool) bool {
-	if f.Enabled != nil {
-		return *f.Enabled
+// IsKeywordEnabled 检查是否启用关键词过滤
+func (f FilterStrategy) IsKeywordEnabled() bool {
+	if f.KeywordEnabled != nil {
+		return *f.KeywordEnabled
 	}
-	return globalEnabled
+	return false
+}
+
+// IsAIEnabled 检查是否启用AI过滤
+func (f FilterStrategy) IsAIEnabled() bool {
+	if f.AIEnabled != nil {
+		return *f.AIEnabled
+	}
+	return false
 }
 
 // GetThreshold 获取阈值

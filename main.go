@@ -42,6 +42,7 @@ func main() {
 	http.HandleFunc("/api/check-password", checkPasswordHandler)
 	http.HandleFunc("/api/get-config", getConfigHandler)
 	http.HandleFunc("/api/save-config", saveConfigHandler)
+	http.HandleFunc("/api/clear-cache", clearCacheHandler)
 
 	//加载静态文件
 	fs := http.FileServer(http.FS(globals.DirStatic))
@@ -458,3 +459,54 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"success":true}`))
 }
+// clearCacheHandler 清除指定源的缓存并重新处理
+func clearCacheHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		URL  string `json:"url"`
+		Type string `json:"type"` // "filter" or "postprocess"
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[缓存清除API] 收到请求 | URL: %s | 类型: %s", req.URL, req.Type)
+
+	if req.URL == "" {
+		http.Error(w, "Missing url", http.StatusBadRequest)
+		return
+	}
+
+	cleared := 0
+	switch req.Type {
+	case "filter":
+		cleared = utils.ClearFilterCacheForSource(req.URL)
+	case "postprocess":
+		cleared = utils.ClearPostProcessCacheForSource(req.URL)
+	default:
+		http.Error(w, "Invalid type, must be 'filter' or 'postprocess'", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[缓存清除API] 清除完成 | URL: %s | 类型: %s | 清除数量: %d", req.URL, req.Type, cleared)
+
+	// 触发源刷新（强制重新处理，跳过内容变化检测）
+	go func() {
+		if err := utils.RefreshSingleFeedForce(req.URL); err != nil {
+			log.Printf("刷新源失败 %s: %v", req.URL, err)
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"cleared": cleared,
+	})
+}
+

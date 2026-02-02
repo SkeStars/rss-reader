@@ -187,15 +187,15 @@ func cleanupCaches(oldConfig, newConfig models.Config) {
 	FilterCacheLock.Unlock()
 }
 
-// shouldFilterURL 判断URL是否应该启用AI过滤
+// shouldFilterURL 判断URL是否应该启用过滤（关键词或AI）
 func shouldFilterURL(urlFilter, folderFilter *models.FilterStrategy) bool {
 	// 优先使用URL自己的过滤策略
 	if urlFilter != nil {
-		return urlFilter.IsEnabled(false)
+		return urlFilter.IsKeywordEnabled() || urlFilter.IsAIEnabled()
 	}
 	// 其次使用文件夹的过滤策略
 	if folderFilter != nil {
-		return folderFilter.IsEnabled(false)
+		return folderFilter.IsKeywordEnabled() || folderFilter.IsAIEnabled()
 	}
 	return false
 }

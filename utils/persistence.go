@@ -945,3 +945,106 @@ func CleanupReadStateOnConfigChange() {
 		saveReadState()
 	}
 }
+
+// ClearFilterCacheForSource 清除指定源的AI过滤缓存
+func ClearFilterCacheForSource(rssURL string) int {
+	// 收集该源的所有文章链接
+	articleLinks := collectArticleLinksForSource(rssURL)
+	
+	if len(articleLinks) == 0 {
+		return 0
+	}
+	
+	globals.FilterCacheLock.Lock()
+	defer globals.FilterCacheLock.Unlock()
+	
+	cleared := 0
+	for link := range articleLinks {
+		if _, exists := globals.FilterCache[link]; exists {
+			delete(globals.FilterCache, link)
+			cleared++
+		}
+	}
+	
+	if cleared > 0 {
+		MarkDataChanged()
+		// 立即保存
+		go saveFilterCache()
+		log.Printf("[缓存清除] 清除源 %s 的AI过滤缓存: %d 条", rssURL, cleared)
+	}
+	
+	return cleared
+}
+
+// ClearPostProcessCacheForSource 清除指定源的后处理缓存
+func ClearPostProcessCacheForSource(rssURL string) int {
+	// 收集该源的所有文章链接
+	articleLinks := collectArticleLinksForSource(rssURL)
+	
+	if len(articleLinks) == 0 {
+		return 0
+	}
+	
+	PostProcessCacheLock.Lock()
+	defer PostProcessCacheLock.Unlock()
+	
+	cleared := 0
+	for link := range articleLinks {
+		if _, exists := PostProcessCache[link]; exists {
+			delete(PostProcessCache, link)
+			cleared++
+		}
+	}
+	
+	if cleared > 0 {
+		MarkDataChanged()
+		// 立即保存
+		go savePostProcessCache()
+		log.Printf("[缓存清除] 清除源 %s 的后处理缓存: %d 条", rssURL, cleared)
+	}
+	
+	return cleared
+}
+
+// collectArticleLinksForSource 收集指定源的所有文章链接
+func collectArticleLinksForSource(rssURL string) map[string]bool {
+	links := make(map[string]bool)
+	
+	// 从 DbMap 收集
+	globals.Lock.RLock()
+	if feed, exists := globals.DbMap[rssURL]; exists {
+		for _, link := range feed.AllItemLinks {
+			links[link] = true
+		}
+		for _, item := range feed.Items {
+			links[item.Link] = true
+			if item.OriginalLink != "" {
+				links[item.OriginalLink] = true
+			}
+		}
+		log.Printf("[缓存清除] 从 DbMap 找到源 [%s], 收集到 %d 个文章链接", rssURL, len(links))
+	} else {
+		log.Printf("[缓存清除] DbMap 中未找到源 [%s]", rssURL)
+	}
+	globals.Lock.RUnlock()
+	
+	// 从 ItemsCache 收集
+	itemsCacheCount := 0
+	globals.ItemsCacheLock.RLock()
+	if items, exists := globals.ItemsCache[rssURL]; exists {
+		for _, item := range items {
+			links[item.Link] = true
+			if item.OriginalLink != "" {
+				links[item.OriginalLink] = true
+			}
+			itemsCacheCount++
+		}
+	}
+	globals.ItemsCacheLock.RUnlock()
+	
+	if itemsCacheCount > 0 {
+		log.Printf("[缓存清除] 从 ItemsCache 补充 %d 个条目，共 %d 个文章链接", itemsCacheCount, len(links))
+	}
+	
+	return links
+}

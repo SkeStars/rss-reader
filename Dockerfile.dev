@@ -4,6 +4,9 @@ WORKDIR /app
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 
+# 安装 bash 和 jq 用于脚本后处理
+RUN apk add --no-cache bash jq
+
 # 安装 air 用于热重载 (锁定版本以兼容当前 Go 环境)
 RUN go install github.com/air-verse/air@v1.61.7
 

@@ -106,9 +106,17 @@ func GetCustomIconURL(rssURL string, customIcon string) string {
 }
 
 func UpdateFeed(url, formattedTime string, isManual bool) error {
+	return UpdateFeedWithOptions(url, formattedTime, isManual, false)
+}
+
+// UpdateFeedWithOptions 更新Feed，支持强制重新处理选项
+func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReprocess bool) error {
 	prefix := "[订阅更新]"
 	if isManual {
 		prefix = "[手动刷新]"
+	}
+	if forceReprocess {
+		prefix = "[强制重处理]"
 	}
 
 	result, err := globals.Fp.ParseURL(url)
@@ -132,7 +140,7 @@ func UpdateFeed(url, formattedTime string, isManual bool) error {
 	globals.Lock.RUnlock()
 
 	shouldUpdateDisplayTime := true
-	if ok && len(result.Items) > 0 {
+	if ok && len(result.Items) > 0 && !forceReprocess {
 		isChanged := false
 		hasNewItems := false
 		
@@ -957,6 +965,46 @@ func RefreshSingleFeed(link string) error {
 	return fmt.Errorf("feed not found")
 }
 
+// RefreshSingleFeedForce 强制刷新单个源并重新处理（跳过内容变化检测）
+func RefreshSingleFeedForce(link string) error {
+	formattedTime := time.Now().Format("2006-01-02 15:04:05")
+	log.Printf("[强制重处理] 开始刷新: %s", link)
+	
+	// 查找匹配的源
+	for _, source := range globals.RssUrls.Sources {
+		if source.IsFolder() {
+			// 检查是否匹配文件夹内的源
+			for _, feedUrl := range source.Urls {
+				if feedUrl.URL == link {
+					startTime := time.Now()
+					err := UpdateFeedWithOptions(link, formattedTime, true, true)
+					duration := time.Since(startTime)
+					if err != nil {
+						log.Printf("[强制重处理] 源 [%s] 刷新失败，耗时 %v: %v", link, duration, err)
+					} else {
+						log.Printf("[强制重处理] 源 [%s] 刷新完成，耗时 %v", link, duration)
+					}
+					return err
+				}
+			}
+		} else if source.URL == link {
+			// 单个源直接刷新
+			startTime := time.Now()
+			err := UpdateFeedWithOptions(link, formattedTime, true, true)
+			duration := time.Since(startTime)
+			if err != nil {
+				log.Printf("[强制重处理] 源 [%s] 刷新失败，耗时 %v: %v", link, duration, err)
+			} else {
+				log.Printf("[强制重处理] 源 [%s] 刷新完成，耗时 %v", link, duration)
+			}
+			return err
+		}
+	}
+	
+	log.Printf("未找到匹配的源: %s", link)
+	return fmt.Errorf("feed not found")
+}
+
 // ClearFeedCacheForPostProcessSources 清除启用了后处理的源的Feed缓存
 // 这样在配置变更后，即使文章内容未变，也会重新获取和处理
 func ClearFeedCacheForPostProcessSources() {
@@ -1072,11 +1120,19 @@ func filterChanged(old, new *models.FilterStrategy) bool {
 		return false
 	}
 	
-	// 比较关键字段
-	if (old.Enabled == nil) != (new.Enabled == nil) {
+	// 比较 KeywordEnabled 字段
+	if (old.KeywordEnabled == nil) != (new.KeywordEnabled == nil) {
 		return true
 	}
-	if old.Enabled != nil && new.Enabled != nil && *old.Enabled != *new.Enabled {
+	if old.KeywordEnabled != nil && new.KeywordEnabled != nil && *old.KeywordEnabled != *new.KeywordEnabled {
+		return true
+	}
+	
+	// 比较 AIEnabled 字段
+	if (old.AIEnabled == nil) != (new.AIEnabled == nil) {
+		return true
+	}
+	if old.AIEnabled != nil && new.AIEnabled != nil && *old.AIEnabled != *new.AIEnabled {
 		return true
 	}
 	

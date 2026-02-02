@@ -81,7 +81,8 @@ type ChatResponse struct {
 }
 
 // ClassifyItem 对RSS文章进行分类
-func (c *LLMClient) ClassifyItem(item models.Item, strategy *models.FilterStrategy) (*FilterResponse, error) {
+// keywordOnly: 如果为true，只进行关键词过滤，不调用AI
+func (c *LLMClient) ClassifyItem(item models.Item, strategy *models.FilterStrategy, keywordOnly bool) (*FilterResponse, error) {
 	// 先检查关键词过滤
 	if strategy != nil {
 		// 检查保留关键词
@@ -104,6 +105,15 @@ func (c *LLMClient) ClassifyItem(item models.Item, strategy *models.FilterStrate
 				}, nil
 			}
 		}
+	}
+
+	// 如果只需要关键词过滤，不调用AI
+	if keywordOnly {
+		return &FilterResponse{
+			IsFiltered: false,
+			Confidence: 0,
+			Reason:     "关键词过滤未命中",
+		}, nil
 	}
 
 	// 构建文章内容
@@ -265,6 +275,10 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 	config := globals.RssUrls.AIFilter
 	strategy := getFilterStrategy(rssURL)
 
+	// 检查是否只使用关键词过滤（不使用AI）
+	useAI := ShouldUseAI(rssURL)
+	keywordOnly := !useAI
+
 	client := NewLLMClient(config)
 	threshold := config.GetThreshold()
 	if strategy != nil {
@@ -312,11 +326,11 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 						log.Printf("[AI过滤命中-来自缓存] 文章 [%s]", job.item.Title)
 					}
 				} else {
-					// 没有缓存，调用AI判断
-					resp, err := client.ClassifyItem(job.item, strategy)
+					// 没有缓存，调用过滤逻辑
+					resp, err := client.ClassifyItem(job.item, strategy, keywordOnly)
 					if err != nil {
 						result.err = err
-						log.Printf("[AI过滤失败] 文章 [%s]: %v", job.item.Title, err)
+						log.Printf("[过滤失败] 文章 [%s]: %v", job.item.Title, err)
 					} else {
 						result.isFiltered = resp.IsFiltered && resp.Confidence >= threshold
 						result.confidence = resp.Confidence
@@ -432,19 +446,40 @@ func getFilterStrategy(rssURL string) *models.FilterStrategy {
 	return nil
 }
 
-// ShouldFilter 检查是否应该启用过滤
+// ShouldFilter 检查是否应该启用过滤（关键词或AI）
 func ShouldFilter(rssURL string) bool {
 	config := globals.RssUrls.AIFilter
-	// 首先检查全局配置是否启用（总开关）
+
+	// 获取该源的特定策略
+	strategy := getFilterStrategy(rssURL)
+	if strategy == nil {
+		return false
+	}
+
+	// 检查是否启用关键词过滤
+	if strategy.IsKeywordEnabled() {
+		return true
+	}
+
+	// 检查是否启用AI过滤（需要全局AI过滤启用且有API Key）
+	if config.Enabled && config.APIKey != "" && strategy.IsAIEnabled() {
+		return true
+	}
+
+	return false
+}
+
+// ShouldUseAI 检查是否应该使用AI过滤
+func ShouldUseAI(rssURL string) bool {
+	config := globals.RssUrls.AIFilter
 	if !config.Enabled || config.APIKey == "" {
 		return false
 	}
 
-	// 获取该源的特定策略
 	strategy := getFilterStrategy(rssURL)
-	if strategy != nil {
-		return strategy.IsEnabled(false) // 传入false作为默认值
+	if strategy == nil {
+		return false
 	}
 
-	return false
+	return strategy.IsAIEnabled()
 }
