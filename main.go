@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"rss-reader/utils"
 	"time"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -65,26 +65,12 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func tplHandler(w http.ResponseWriter, r *http.Request) {
-	// 创建一个新的模板，并设置自定义分隔符为<< >>，避免与Vue的语法冲突
-	tmplInstance := template.New("index.html").Delims("<<", ">>")
-	//添加加法函数计数
-	funcMap := template.FuncMap{
-		"inc": func(i int) int {
-			return i + 1
-		},
-		"json": func(v interface{}) template.JS {
-			a, _ := json.Marshal(v)
-			return template.JS(a)
-		},
-	}
-	// 加载模板文件
-	tmpl, err := tmplInstance.Funcs(funcMap).ParseFS(globals.DirStatic, "static/index.html")
-	if err != nil {
-		log.Println("模板加载错误:", err)
+	if globals.Tpl == nil {
+		http.Error(w, "Template not initialized", http.StatusInternalServerError)
 		return
 	}
 
-	//判断现在是否是夜间
+	// 判断现在是否是夜间
 	formattedTime := time.Now().Format("15:04:05")
 	darkMode := false
 	if globals.RssUrls.NightStartTime != "" && globals.RssUrls.NightEndTime != "" {
@@ -98,6 +84,9 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 	nextUpdate := globals.NextUpdateTime
 	globals.Lock.RUnlock()
 
+	// 获取 feeds 列表 (只调用一次)
+	allFeeds := utils.GetFeeds()
+
 	// 定义一个数据对象
 	data := struct {
 		Keywords       string
@@ -108,20 +97,35 @@ func tplHandler(w http.ResponseWriter, r *http.Request) {
 		DefaultGroup   string
 		NextUpdateTime string
 	}{
-		Keywords:       getKeywords(),
-		RssDataList:    utils.GetFeeds(),
+		Keywords:       getKeywordsFromFeeds(allFeeds),
+		RssDataList:    allFeeds,
 		DarkMode:       darkMode,
 		ReFresh:        globals.RssUrls.ReFresh,
-		Groups:         getGroups(utils.GetFeeds()),
+		Groups:         getGroups(allFeeds),
 		DefaultGroup:   globals.RssUrls.DefaultGroup,
 		NextUpdateTime: nextUpdate.Format(time.RFC3339),
 	}
 
 	// 渲染模板并将结果写入响应
-	err = tmpl.Execute(w, data)
+	err := globals.Tpl.Execute(w, data)
 	if err != nil {
+		// 忽略 broken pipe 错误，这通常是由于客户端在下载完成前关闭了连接
+		if strings.Contains(err.Error(), "broken pipe") || strings.Contains(err.Error(), "connection reset by peer") {
+			return
+		}
 		log.Println("模板渲染错误:", err)
 	}
+}
+
+// 辅助函数：从已获取的 feeds 中提取关键词，避免重复解析
+func getKeywordsFromFeeds(feeds []models.Feed) string {
+	words := ""
+	for _, feed := range feeds {
+		if feed.Title != "" {
+			words += feed.Title + ","
+		}
+	}
+	return words
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -168,18 +172,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//获取关键词也就是title
-//获取feeds列表
-func getKeywords() string {
-	words := ""
-	feeds := utils.GetFeeds()
-	for _, feed := range feeds {
-		if feed.Title != "" {
-			words += feed.Title + ","
-		}
-	}
-	return words
-}
 
 func getFeedsHandler(w http.ResponseWriter, r *http.Request) {
 	feeds := utils.GetFeeds()

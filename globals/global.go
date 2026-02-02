@@ -9,6 +9,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/mmcdole/gofeed"
+	"html/template"
+	"encoding/json"
 )
 
 var (
@@ -38,6 +40,9 @@ var (
 
 	// 下次更新时间
 	NextUpdateTime time.Time
+
+	// 缓存的页面模板
+	Tpl *template.Template
 )
 
 // Init 首次初始化，创建所有缓存
@@ -57,6 +62,28 @@ func Init() {
 	FilterCache = make(map[string]models.FilterCacheEntry)
 	ReadState = make(map[string]int64)
 	ItemsCache = make(map[string][]models.Item)
+
+	// 初始化模板
+	InitTemplate()
+}
+
+// InitTemplate 初始化模板缓存
+func InitTemplate() {
+	funcMap := template.FuncMap{
+		"inc": func(i int) int {
+			return i + 1
+		},
+		"json": func(v interface{}) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
+	}
+	tmpl, err := template.New("index.html").Delims("<<", ">>").Funcs(funcMap).ParseFS(DirStatic, "static/index.html")
+	if err != nil {
+		fmt.Printf("初始化模板失败: %v\n", err)
+		return
+	}
+	Tpl = tmpl
 }
 
 // ReloadConfig 重新加载配置，保留现有缓存，返回旧配置用于比较差异
@@ -76,6 +103,10 @@ func ReloadConfig() (models.Config, error) {
 	
 	// 智能清理缓存
 	cleanupCaches(oldConfig, conf)
+
+	// 重新加载模板（以防 index.html 变化）
+	InitTemplate()
+
 	return oldConfig, nil
 }
 

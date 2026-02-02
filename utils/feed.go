@@ -34,10 +34,10 @@ func UpdateFeeds() {
 		for _, source := range globals.RssUrls.Sources {
 			if source.IsFolder() {
 				for _, feedUrl := range source.Urls {
-					go UpdateFeed(feedUrl.URL, formattedTime)
+					go UpdateFeed(feedUrl.URL, formattedTime, false)
 				}
 			} else if source.URL != "" {
-				go UpdateFeed(source.URL, formattedTime)
+				go UpdateFeed(source.URL, formattedTime, false)
 			}
 		}
 		<-tick
@@ -105,27 +105,74 @@ func GetCustomIconURL(rssURL string, customIcon string) string {
 	return GetFaviconURL(rssURL)
 }
 
-func UpdateFeed(url, formattedTime string) error {
+func UpdateFeed(url, formattedTime string, isManual bool) error {
+	prefix := "[订阅更新]"
+	if isManual {
+		prefix = "[手动刷新]"
+	}
+
 	result, err := globals.Fp.ParseURL(url)
 	if err != nil {
-		log.Printf("Error fetching feed: %v | %v", url, err)
+		errStr := err.Error()
+		if strings.HasSuffix(errStr, "EOF") {
+			errStr += " (服务器拒绝访问请求)"
+		}
+		log.Printf("%s [抓取失败] 地址: %s | 详情: %v", prefix, url, errStr)
 		return err
 	}
+	
+	log.Printf("%s [抓取成功] 源: %s | 条目数: %d", prefix, result.Title, len(result.Items))
 	
 	// 检查是否为榜单模式
 	isRanking := IsRankingMode(url)
 	
-	//feed内容无更新时无需更新缓存（非榜单模式下的快速判断）
-	if !isRanking {
-		globals.Lock.RLock()
-		cache, ok := globals.DbMap[url]
-		globals.Lock.RUnlock()
+	// 快速判断内容是否有更新
+	globals.Lock.RLock()
+	cache, ok := globals.DbMap[url]
+	globals.Lock.RUnlock()
 
-		if ok &&
-			len(result.Items) > 0 &&
-			len(cache.Items) > 0 &&
-			result.Items[0].Link == cache.Items[0].Link {
+	shouldUpdateDisplayTime := true
+	if ok && len(result.Items) > 0 {
+		isChanged := false
+		hasNewItems := false
+		
+		// 检查是否有新文章（链接不在旧列表中）
+		oldLinksMap := make(map[string]bool)
+		for _, link := range cache.AllItemLinks {
+			oldLinksMap[link] = true
+		}
+		for _, item := range result.Items {
+			if !oldLinksMap[item.Link] {
+				hasNewItems = true
+				isChanged = true
+				break
+			}
+		}
+
+		// 如果还没有发现新文章，检查顺序或标题是否变化
+		if !isChanged {
+			if len(result.Items) != len(cache.AllItemLinks) || len(result.Items) != len(cache.AllItemTitles) {
+				isChanged = true
+			} else {
+				for i, item := range result.Items {
+					if item.Link != cache.AllItemLinks[i] || item.Title != cache.AllItemTitles[i] {
+						isChanged = true
+						break
+					}
+				}
+			}
+		}
+
+		if !isChanged {
+			if isManual {
+				log.Printf("%s [无新内容] 源: %s | 内容与顺序均未发生变化", prefix, result.Title)
+			}
 			return nil
+		}
+		
+		// 关键逻辑：如果是榜单模式，且没有新文章出现（只是排名变动或标题变动），不更新展示时间
+		if isRanking && !hasNewItems {
+			shouldUpdateDisplayTime = false
 		}
 	}
 	
@@ -170,6 +217,7 @@ func UpdateFeed(url, formattedTime string) error {
 	passedLinks := make(map[string]bool)
 	
 	if ShouldFilter(url) {
+		log.Printf("%s [开始AI过滤] 源: %s | 待处理条目: %d", prefix, result.Title, originalCount)
 		filteredItems = FilterItems(allItems, url)
 		for _, item := range filteredItems {
 			passedLinks[item.Link] = true
@@ -183,6 +231,7 @@ func UpdateFeed(url, formattedTime string) error {
 
 	// 榜单模式下的处理：将新增条目放在前面
 	if isRanking {
+		log.Printf("%s [榜单模式] 开始处理排序与时间戳: %s", prefix, result.Title)
 		allItems = processRankingItems(url, allItems, passedLinks)
 		
 		// 重新构建过滤后的列表，以反映 processRankingItems 可能带来的排序变化
@@ -197,23 +246,30 @@ func UpdateFeed(url, formattedTime string) error {
 		} else {
 			filteredItems = allItems
 		}
+		log.Printf("%s [榜单模式] 处理完成: %s", prefix, result.Title)
 	}
 
 	// 应用后处理
 	if ShouldPostProcess(url) {
+		beforePostCount := len(filteredItems)
 		filteredItems = PostProcessItems(filteredItems, url)
+		log.Printf("%s [后处理完成] 源: %s | 处理条目: %d", prefix, result.Title, beforePostCount)
 	}
 
 	// 应用条目缓存逻辑：将旧条目与新条目合并
 	cacheItems := GetCacheItems(url)
 	if cacheItems > 0 {
+		beforeMergeCount := len(filteredItems)
 		filteredItems = mergeWithCachedItems(url, filteredItems, cacheItems)
+		log.Printf("%s [缓存合并] 源: %s | 合并前: %d，合并后: %d", prefix, result.Title, beforeMergeCount, len(filteredItems))
 	}
 
-	// 记录过滤前的所有文章链接，用于清理时判断
+	// 记录过滤前的所有文章链接和标题，用于清理和变动检测
 	allItemLinks := make([]string, 0, len(allItems))
+	allItemTitles := make([]string, 0, len(allItems))
 	for _, item := range allItems {
 		allItemLinks = append(allItemLinks, item.Link)
+		allItemTitles = append(allItemTitles, item.Title)
 	}
 
 	// 即时清理该源已不存在的文章缓存（AI过滤缓存、后处理缓存、榜单时间戳等）
@@ -270,30 +326,34 @@ func UpdateFeed(url, formattedTime string) error {
 		}
 		
 		// 清理榜单时间戳
-		if len(oldLinks) > 0 {
-			if !IsRankingMode(u) {
-				// 如果不再是榜单模式，清理该源在持久化中的所有时间戳
-				CleanupRankingTimestamps(oldLinks, make(map[string]bool))
-			} else {
-				// 如果仍是榜单模式，清理已不存在的条目
-				CleanupRankingTimestamps(oldLinks, currentLinks)
-			}
+		// 注意：榜单模式下的常规清理已在 processRankingItems 中完成
+		// 这里只处理"榜单模式被关闭"的情况，需要清理该源的所有时间戳
+		if len(oldLinks) > 0 && !IsRankingMode(u) {
+			CleanupRankingTimestamps(oldLinks, make(map[string]bool))
 		}
 	}(url, allItemLinks, oldLinks, oldItemLinks, filteredItems)
+
+	// 确定最终展示的更新时间
+	lastUpdateTime := formattedTime
+	if !shouldUpdateDisplayTime && ok {
+		lastUpdateTime = cache.Custom["lastupdate"]
+	}
 
 	customFeed := models.Feed{
 		Title:         result.Title,
 		Link:          url,
 		Icon:          icon,
-		Custom:        map[string]string{"lastupdate": formattedTime},
+		Custom:        map[string]string{"lastupdate": lastUpdateTime},
 		Items:         filteredItems,
 		FilteredCount: originalCount - len(filteredItems),
 		AllItemLinks:  allItemLinks,
+		AllItemTitles: allItemTitles,
 	}
 
 	globals.Lock.Lock()
 	defer globals.Lock.Unlock()
 	globals.DbMap[url] = customFeed
+	log.Printf("%s [更新完成] 源: %s | 最终条目数: %d", prefix, result.Title, len(filteredItems))
 	return nil
 }
 
@@ -569,7 +629,7 @@ func GetFeeds() []models.Feed {
 			cache, ok := globals.DbMap[source.URL]
 			globals.Lock.RUnlock()
 			if !ok {
-				log.Printf("Error getting feed from db is null %v", source.URL)
+				log.Printf("[数据读取跳过] 订阅源 %s 尚未就绪（可能正在抓取中）", source.URL)
 				// 返回空的Feed对象，展示卡片但内容为空
 				title := "加载失败"
 				if source.Name != "" {
@@ -622,7 +682,7 @@ func buildFolderFeed(source models.FeedSource) *models.Feed {
 		cache, ok := globals.DbMap[feedUrl.URL]
 		globals.Lock.RUnlock()
 		if !ok {
-			log.Printf("Error getting feed from db is null %v", feedUrl.URL)
+			log.Printf("[数据读取跳过] 子源 %s 尚未就绪", feedUrl.URL)
 			// 为文件夹添加一个提示项，表明某个源加载失败
 			sourceName := "未知源"
 			if feedUrl.Name != "" {
@@ -778,7 +838,7 @@ func WatchConfigFileChanges(filePath string) {
 			formattedTime := time.Now().Format("2006-01-02 15:04:05")
 
 			for url := range affectedUrls {
-				go UpdateFeed(url, formattedTime)
+				go UpdateFeed(url, formattedTime, true)
 			}
 		}
 
@@ -828,7 +888,7 @@ func WatchConfigFileChanges(filePath string) {
 // RefreshSingleFeed 刷新单个源或文件夹内的所有源
 func RefreshSingleFeed(link string) error {
 	formattedTime := time.Now().Format("2006-01-02 15:04:05")
-	log.Printf("手动刷新源: %s", link)
+	log.Printf("[手动刷新] 开始刷新: %s", link)
 	
 	// 查找匹配的源
 	for _, source := range globals.RssUrls.Sources {
@@ -847,16 +907,17 @@ func RefreshSingleFeed(link string) error {
 			isFolderLink := link == "folder:"+source.Name
 			
 			if folderMatch || source.Name == link || isFolderLink {
-				log.Printf("刷新文件夹: %s", source.Name)
+				log.Printf("[手动刷新] 确认匹配文件夹: %s", source.Name)
 				var wg sync.WaitGroup
 				errChan := make(chan error, len(source.Urls))
 				
+				startTime := time.Now()
 				for _, feedUrl := range source.Urls {
 					wg.Add(1)
 					go func(url string) {
 						defer wg.Done()
-						if err := UpdateFeed(url, formattedTime); err != nil {
-							log.Printf("文件夹[%s]中源[%s]刷新失败: %v", source.Name, url, err)
+						if err := UpdateFeed(url, formattedTime, true); err != nil {
+							// UpdateFeed 内部已有详细日志
 							errChan <- err
 						}
 					}(feedUrl.URL)
@@ -865,19 +926,30 @@ func RefreshSingleFeed(link string) error {
 				close(errChan)
 
 				errorCount := len(errChan)
+				duration := time.Since(startTime)
 				if errorCount > 0 {
-					log.Printf("文件夹[%s]刷新完成，共有 %d 个源失败", source.Name, errorCount)
+					log.Printf("[手动刷新] 文件夹 [%s] 刷新完成，耗时 %v，共有 %d/%d 个源失败", source.Name, duration, errorCount, len(source.Urls))
 					// 如果全部失败才返回错误，部分失败认为刷新过程已完成
 					if errorCount == len(source.Urls) {
 						return fmt.Errorf("所有源刷新失败")
 					}
+				} else {
+					log.Printf("[手动刷新] 文件夹 [%s] 刷新成功，耗时 %v，共 %d 个源", source.Name, duration, len(source.Urls))
 				}
 				return nil
 			}
 		} else if source.URL == link {
 			// 单个源直接刷新
-			log.Printf("刷新单个源: %s", link)
-			return UpdateFeed(source.URL, formattedTime)
+			startTime := time.Now()
+			log.Printf("[手动刷新] 确认匹配单个源: %s", link)
+			err := UpdateFeed(source.URL, formattedTime, true)
+			duration := time.Since(startTime)
+			if err != nil {
+				log.Printf("[手动刷新] 单个源 [%s] 刷新失败，耗时 %v: %v", link, duration, err)
+			} else {
+				log.Printf("[手动刷新] 单个源 [%s] 刷新完成，耗时 %v", link, duration)
+			}
+			return err
 		}
 	}
 	

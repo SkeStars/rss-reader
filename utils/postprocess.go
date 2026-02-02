@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -103,7 +104,7 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 
 					if err != nil {
 						result.err = err
-						log.Printf("后处理条目失败 [%s]: %v", job.item.Title, err)
+						log.Printf("[后处理失败] 条目 [%s]: %v", job.item.Title, err)
 					} else {
 						// 如果后处理会修改 Link，先保存原始链接
 						if config.ModifyLink && processedItem.Link != job.item.Link {
@@ -178,7 +179,7 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 
 	// 只在有新处理时展示统计
 	if newItems > 0 || failedItems > 0 {
-		log.Printf("后处理完成 [%s]: 并发数 %d，新处理 %d 篇，失败 %d 篇 | 缓存命中 %d 篇",
+		log.Printf("[后处理统计] 源 [%s]: 并发数 %d，新处理 %d 篇，失败 %d 篇 | 缓存命中 %d 篇",
 			rssURL, concurrency, newItems, failedItems, cacheHits)
 	}
 
@@ -313,6 +314,11 @@ func processItemWithAI(item models.Item, config *models.PostProcessConfig) (mode
 
 // processItemWithScript 使用脚本处理条目
 func processItemWithScript(item models.Item, config *models.PostProcessConfig) (models.Item, error) {
+	// 创建超时 context（复用 AI 的超时配置）
+	timeout := time.Duration(globals.RssUrls.AIFilter.GetTimeout()) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	// 将条目转换为JSON
 	itemJSON, err := json.Marshal(map[string]string{
 		"title":       item.Title,
@@ -330,10 +336,10 @@ func processItemWithScript(item models.Item, config *models.PostProcessConfig) (
 	// 优先使用内联脚本内容
 	if config.ScriptContent != "" {
 		// 使用 bash -c 直接执行脚本内容
-		cmd = exec.Command("bash", "-c", config.ScriptContent)
+		cmd = exec.CommandContext(ctx, "bash", "-c", config.ScriptContent)
 	} else if config.ScriptPath != "" {
 		// 使用脚本文件
-		cmd = exec.Command(config.ScriptPath)
+		cmd = exec.CommandContext(ctx, config.ScriptPath)
 	} else {
 		return item, fmt.Errorf("脚本内容或脚本路径未配置")
 	}
@@ -342,6 +348,9 @@ func processItemWithScript(item models.Item, config *models.PostProcessConfig) (
 
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return item, fmt.Errorf("脚本执行超时（超过 %v）", timeout)
+		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return item, fmt.Errorf("脚本执行失败: %s, stderr: %s", err, string(exitErr.Stderr))
 		}

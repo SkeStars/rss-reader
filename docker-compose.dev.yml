@@ -1,0 +1,16 @@
+services:
+  server-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: rss-reader:dev
+    container_name: rss-reader-dev
+    ports:
+      - "8081:8080"
+    volumes:
+      - .:/app
+      # 避免把本地的 bin 或 tmp 挂载进容器干扰
+      - /app/tmp
+    environment:
+      - TZ=Asia/Shanghai
+    restart: always

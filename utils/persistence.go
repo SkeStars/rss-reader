@@ -114,7 +114,7 @@ func loadFilterCache() {
 	globals.FilterCache = cache
 	globals.FilterCacheLock.Unlock()
 	
-	log.Printf("已加载 %d 条过滤缓存", len(cache))
+	log.Printf("[数据加载] 过滤缓存: 已加载 %d 条", len(cache))
 }
 
 // loadRankingTimestamps 加载榜单时间戳
@@ -137,7 +137,7 @@ func loadRankingTimestamps() {
 	RankingTimestamps = timestamps
 	RankingTimestampsLock.Unlock()
 	
-	log.Printf("已加载 %d 条榜单时间戳", len(timestamps))
+	log.Printf("[数据加载] 榜单时间戳: 已加载 %d 条", len(timestamps))
 
 	// 启动时延迟执行清理，防止离线期间配置变更导致的数据冗余
 	// 只有在 DbMap 准备好后才执行，避免误删
@@ -175,7 +175,7 @@ func loadReadState() {
 	globals.ReadState = readState
 	globals.ReadStateLock.Unlock()
 	
-	log.Printf("已加载 %d 条已读状态", len(readState))
+	log.Printf("[数据加载] 已读状态: 已加载 %d 条", len(readState))
 }
 
 // MarkDataChanged 标记数据已更改
@@ -282,7 +282,7 @@ func loadPostProcessCache() {
 	PostProcessCache = cache
 	PostProcessCacheLock.Unlock()
 	
-	log.Printf("已加载 %d 条后处理缓存", len(cache))
+	log.Printf("[数据加载] 后处理缓存: 已加载 %d 条", len(cache))
 }
 
 // savePostProcessCache 保存后处理缓存
@@ -322,7 +322,7 @@ func loadItemsCache() {
 	globals.ItemsCache = cache
 	globals.ItemsCacheLock.Unlock()
 	
-	log.Printf("已加载 %d 个源的条目缓存", len(cache))
+	log.Printf("[数据加载] 条目缓存: 已加载 %d 个源", len(cache))
 }
 
 // saveItemsCache 保存条目缓存
@@ -524,22 +524,28 @@ func autoCleanupLoop() {
 	}
 }
 
-// isDbMapReady 检查 DbMap 是否已准备好（非空且有有效数据）
+// isDbMapReady 检查 DbMap 是否已准备好（所有配置的源都已加载）
 func isDbMapReady() bool {
 	globals.Lock.RLock()
 	defer globals.Lock.RUnlock()
 	
-	if len(globals.DbMap) == 0 {
-		return false
+	allUrls := globals.RssUrls.GetAllUrls()
+	if len(allUrls) == 0 {
+		return true
 	}
 	
-	// 检查是否至少有一个源有数据
-	for _, feed := range globals.DbMap {
-		if len(feed.Items) > 0 || len(feed.AllItemLinks) > 0 {
-			return true
+	// 检查是否所有配置的源都已经有过抓取记录（存在于 DbMap 中）
+	// 这避免了在启动初期或部分源加载失败时执行全量清理导致的数据丢失
+	loadedCount := 0
+	for _, url := range allUrls {
+		if _, ok := globals.DbMap[url]; ok {
+			loadedCount++
 		}
 	}
-	return false
+	
+	// 如果已加载的源少于总数的 80%，认为尚未就绪（允许少量源抓取失败）
+	// 但在配置变更初期的前几秒，loadedCount 会很低
+	return loadedCount >= len(allUrls) || (len(allUrls) > 0 && loadedCount >= (len(allUrls)*4/5))
 }
 
 // cleanupPersistentData 清理持久化数据
@@ -572,12 +578,12 @@ func cleanupPersistentData() {
 	cleanedItemsCache := cleanupItemsCache()
 	
 	if cleanedFilterCache > 0 || cleanedRankingTimestamps > 0 || cleanedReadState > 0 || cleanedPostProcessCache > 0 || cleanedItemsCache > 0 {
-		log.Printf("清理完成: 过滤缓存清理 %d 条，榜单时间戳清理 %d 条，已读状态清理 %d 条，后处理缓存清理 %d 条，条目缓存清理 %d 个源", 
+		log.Printf("[数据清理] 清理完成: 过滤缓存 %d 条，榜单时间戳 %d 条，已读状态 %d 条，后处理缓存 %d 条，条目缓存 %d 个源", 
 			cleanedFilterCache, cleanedRankingTimestamps, cleanedReadState, cleanedPostProcessCache, cleanedItemsCache)
 		MarkDataChanged()
 		SaveAllData()
 	} else {
-		log.Println("清理完成: 无需清理的数据")
+		log.Println("[数据清理] 清理完成: 暂无需要清理的数据")
 	}
 }
 
@@ -767,16 +773,29 @@ func cleanupRankingTimestampsAll() int {
 }
 
 // cleanupReadState 清理已读状态中不再有效的条目
+// 策略：保留当前所有有效链接的已读状态，或者保留 30 天内的已读记录（防止由于源条目数限制导致的误删）
 func cleanupReadState(validLinks map[string]bool) int {
 	globals.ReadStateLock.Lock()
 	defer globals.ReadStateLock.Unlock()
 	
 	cleaned := 0
-	for link := range globals.ReadState {
-		if !validLinks[link] {
-			delete(globals.ReadState, link)
-			cleaned++
+	now := time.Now().Unix()
+	gracePeriod := int64(1 * 24 * 3600) // 1 天保留期
+	
+	for link, readAt := range globals.ReadState {
+		// 如果链接当前有效，保留
+		if validLinks[link] {
+			continue
 		}
+		
+		// 如果是 1 天内读过的，保留（防止误删还没失效但在 feeds 中被顶掉的条目）
+		if now-readAt < gracePeriod {
+			continue
+		}
+		
+		// 否则清理
+		delete(globals.ReadState, link)
+		cleaned++
 	}
 	
 	return cleaned
@@ -921,7 +940,7 @@ func CleanupReadStateOnConfigChange() {
 	cleaned := cleanupReadState(validLinks)
 	
 	if cleaned > 0 {
-		log.Printf("已读状态清理：配置变更导致 %d 条记录被清理", cleaned)
+		log.Printf("[已读状态清理] 由于超过 1 天或订阅源变更，%d 条过期记录被清理", cleaned)
 		MarkDataChanged()
 		saveReadState()
 	}

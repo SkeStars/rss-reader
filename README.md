@@ -109,11 +109,26 @@ git clone https://github.com/srcrs/rss-reader
 docker-compose up -d
 ```
 
-国内服务器将Dockerfile中取消下面注释使用 go mod 镜像
-```dockerfile
-#RUN go env -w GO111MODULE=on && \
-#    go env -w GOPROXY=https://goproxy.cn,direct
-```
+# 开发流程优化
+
+为了解决修改代码后频繁构建镜像耗时过长的问题，我们引入了以下优化方案：
+
+### 1. Docker 构建优化
+已经优化了 `Dockerfile` 的分层结构。现在 `go mod download` 会在拷贝源码之前运行并被缓存。**除非你修改了 `go.mod` 或 `go.sum`，否则重新构建时不会重复下载依赖。**
+
+同时默认开启了 `GOPROXY=https://goproxy.cn,direct`，加速国内依赖下载。
+
+### 2. 热重载开发模式（推荐）
+我们集成了 [Air](https://github.com/air-verse/air) 工具，支持在 Docker 容器内实现代码修改后自动重载，无需重启或重新构建容器。
+
+**使用方法：**
+1. 确保已安装 Docker 和 Docker-Compose。
+2. 在项目根目录下运行：
+   ```bash
+   docker-compose -f docker-compose.dev.yml up
+   ```
+3. 现在你可以直接修改 `.go` 或 `.html` 文件，容器会自动检测改动并瞬间重新编译运行。
+4. 开发环境默认监听 `8081` 端口（可在 `docker-compose.dev.yml` 中修改）。
 
 部署成功后，通过ip+端口号访问
 

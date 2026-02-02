@@ -9,7 +9,8 @@ type Feed struct {
 	IsFolder bool              `json:"isFolder,omitempty"` // 是否为文件夹类型
 	// AI过滤统计
 	FilteredCount int      `json:"filteredCount,omitempty"` // 被过滤的文章数量
-	AllItemLinks  []string `json:"-"`                      // 过滤前的所有文章链接（不输出到JSON，仅用于内部清理）
+	AllItemLinks  []string `json:"-"`                      // 过滤前的所有文章链接（不输出到JSON，用于内容变动检测和内部清理）
+	AllItemTitles []string `json:"-"`                      // 过滤前的所有文章标题（不输出到JSON，用于内容变动检测）
 	Group         string   `json:"group,omitempty"`        // 分组名称
 }
 

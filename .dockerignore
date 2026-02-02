@@ -1,0 +1,9 @@
+.git
+.air.toml
+Dockerfile*
+docker-compose*.yml
+data/
+tmp/
+*.png
+LICENSE
+README.md

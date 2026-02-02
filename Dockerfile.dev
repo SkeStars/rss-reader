@@ -1,0 +1,16 @@
+FROM golang:1.23-alpine
+
+WORKDIR /app
+
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+
+# 安装 air 用于热重载 (锁定版本以兼容当前 Go 环境)
+RUN go install github.com/air-verse/air@v1.61.7
+
+# 拷贝依赖文件并下载
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 运行时将通过 volumes 挂载源码，所以这里不需要 COPY . .
+# 只需要运行 air
+CMD ["air"]

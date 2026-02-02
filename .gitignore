@@ -1,0 +1,34 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with Litmus
+*.out
+
+# Project specific
+rss-reader
+.reload
+
+# Data and Cache
+data/
+tmp/
+
+# Configuration (contains secrets like apiKey/password)
+# If you want to keep config.json in git, comment the line below
+config.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
