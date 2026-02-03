@@ -2,11 +2,13 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os/exec"
 	"regexp"
 	"rss-reader/globals"
 	"rss-reader/models"
@@ -86,15 +88,42 @@ func (c *LLMClient) ClassifyItem(item models.Item, strategy *models.FilterStrate
 	// 先检查关键词过滤
 	if strategy != nil {
 		// 检查保留关键词
+		hasKeepKeyword := false
+		matchedKeepKeyword := ""
 		for _, keyword := range strategy.KeepKeywords {
 			if containsKeyword(item.Title, keyword) || containsKeyword(item.Description, keyword) {
+				hasKeepKeyword = true
+				matchedKeepKeyword = keyword
+				break
+			}
+		}
+
+		// 白名单模式：仅保留包含保留关键词的文章
+		if strategy.IsWhitelistMode() {
+			if hasKeepKeyword {
 				return &FilterResponse{
 					IsFiltered: false,
 					Confidence: 1.0,
-					Reason:     fmt.Sprintf("包含保留关键词: %s", keyword),
+					Reason:     fmt.Sprintf("白名单模式：包含保留关键词 [%s]", matchedKeepKeyword),
 				}, nil
 			}
+			// 白名单模式下，不包含保留关键词的文章全部过滤
+			return &FilterResponse{
+				IsFiltered: true,
+				Confidence: 1.0,
+				Reason:     "白名单模式：不包含任何保留关键词",
+			}, nil
 		}
+
+		// 非白名单模式：包含保留关键词的文章直接保留
+		if hasKeepKeyword {
+			return &FilterResponse{
+				IsFiltered: false,
+				Confidence: 1.0,
+				Reason:     fmt.Sprintf("包含保留关键词: %s", matchedKeepKeyword),
+			}, nil
+		}
+
 		// 检查过滤关键词
 		for _, keyword := range strategy.FilterKeywords {
 			if containsKeyword(item.Title, keyword) || containsKeyword(item.Description, keyword) {
@@ -442,6 +471,22 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 			rssURL, concurrency, newItems, filteredByAI, newItems-filteredByAI, cacheHits, filteredByCache)
 	}
 
+	// 应用脚本规则过滤
+	if strategy != nil && strategy.IsScriptFilterEnabled() && strategy.ScriptFilterContent != "" {
+		beforeScriptCount := len(filteredItems)
+		var err error
+		filteredItems, err = ApplyScriptFilter(filteredItems, strategy.ScriptFilterContent, rssURL)
+		if err != nil {
+			log.Printf("[脚本规则过滤失败] 源 [%s]: %v，保留原始条目", rssURL, err)
+		} else {
+			filteredByScript := beforeScriptCount - len(filteredItems)
+			if filteredByScript > 0 {
+				log.Printf("[脚本规则过滤] 源 [%s]: 过滤前 %d 篇，过滤后 %d 篇，过滤 %d 篇", 
+					rssURL, beforeScriptCount, len(filteredItems), filteredByScript)
+			}
+		}
+	}
+
 	return filteredItems
 }
 
@@ -465,7 +510,7 @@ func getFilterStrategy(rssURL string) *models.FilterStrategy {
 	return nil
 }
 
-// ShouldFilter 检查是否应该启用过滤（关键词或AI）
+// ShouldFilter 检查是否应该启用过滤（关键词或AI或脚本）
 func ShouldFilter(rssURL string) bool {
 	config := globals.RssUrls.AIFilter
 
@@ -477,6 +522,11 @@ func ShouldFilter(rssURL string) bool {
 
 	// 检查是否启用关键词过滤
 	if strategy.IsKeywordEnabled() {
+		return true
+	}
+
+	// 检查是否启用脚本规则过滤
+	if strategy.IsScriptFilterEnabled() {
 		return true
 	}
 
@@ -501,4 +551,48 @@ func ShouldUseAI(rssURL string) bool {
 	}
 
 	return strategy.IsAIEnabled()
+}
+
+// ApplyScriptFilter 应用脚本规则过滤
+// 脚本通过 stdin 接收所有条目的 JSON 数组，返回过滤后的条目 JSON 数组
+// 输入格式：[{"title":"标题1","link":"链接1","pubDate":"时间1",...}, ...]
+// 输出格式：[{"title":"标题1","link":"链接1","pubDate":"时间1",...}, ...]
+func ApplyScriptFilter(items []models.Item, scriptContent string, rssURL string) ([]models.Item, error) {
+	if len(items) == 0 {
+		return items, nil
+	}
+
+	// 创建超时 context（复用 AI 的超时配置）
+	timeout := time.Duration(globals.RssUrls.AIFilter.GetTimeout()) * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// 将所有条目转换为 JSON 数组
+	itemsJSON, err := json.Marshal(items)
+	if err != nil {
+		return items, fmt.Errorf("序列化条目失败: %w", err)
+	}
+
+	// 使用 bash -c 直接执行脚本内容
+	cmd := exec.CommandContext(ctx, "bash", "-c", scriptContent)
+	cmd.Stdin = bytes.NewReader(itemsJSON)
+
+	output, err := cmd.Output()
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return items, fmt.Errorf("脚本执行超时（超过 %v）", timeout)
+		}
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return items, fmt.Errorf("脚本执行失败: %s, stderr: %s", err, string(exitErr.Stderr))
+		}
+		return items, fmt.Errorf("脚本执行失败: %w", err)
+	}
+
+	// 解析脚本输出（应该是过滤后的条目数组）
+	var filteredItems []models.Item
+	if err := json.Unmarshal(output, &filteredItems); err != nil {
+		return items, fmt.Errorf("解析脚本输出失败: %w, 输出: %s", err, string(output))
+	}
+
+	return filteredItems, nil
 }

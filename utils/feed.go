@@ -1303,6 +1303,27 @@ func filterChanged(old, new *models.FilterStrategy) bool {
 		return true
 	}
 	
+	// 比较 WhitelistMode 字段
+	if (old.WhitelistMode == nil) != (new.WhitelistMode == nil) {
+		return true
+	}
+	if old.WhitelistMode != nil && new.WhitelistMode != nil && *old.WhitelistMode != *new.WhitelistMode {
+		return true
+	}
+	
+	// 比较 ScriptFilterEnabled 字段
+	if (old.ScriptFilterEnabled == nil) != (new.ScriptFilterEnabled == nil) {
+		return true
+	}
+	if old.ScriptFilterEnabled != nil && new.ScriptFilterEnabled != nil && *old.ScriptFilterEnabled != *new.ScriptFilterEnabled {
+		return true
+	}
+	
+	// 比较 ScriptFilterContent 字段
+	if old.ScriptFilterContent != new.ScriptFilterContent {
+		return true
+	}
+	
 	if (old.Threshold == nil) != (new.Threshold == nil) {
 		return true
 	}

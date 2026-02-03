@@ -131,6 +131,12 @@ type FilterStrategy struct {
 	FilterKeywords []string `json:"filterKeywords,omitempty"`
 	// 保留关键词（包含这些关键词的文章将被保留，优先级高于过滤）
 	KeepKeywords []string `json:"keepKeywords,omitempty"`
+	// 白名单模式：启用后仅保留包含保留关键词的文章（其他全部过滤）
+	WhitelistMode *bool `json:"whitelistMode,omitempty"`
+	// 是否启用脚本规则过滤
+	ScriptFilterEnabled *bool `json:"scriptFilterEnabled,omitempty"`
+	// 脚本规则过滤的脚本内容（JavaScript）
+	ScriptFilterContent string `json:"scriptFilterContent,omitempty"`
 }
 
 // IsKeywordEnabled 检查是否启用关键词过滤
@@ -145,6 +151,22 @@ func (f FilterStrategy) IsKeywordEnabled() bool {
 func (f FilterStrategy) IsAIEnabled() bool {
 	if f.AIEnabled != nil {
 		return *f.AIEnabled
+	}
+	return false
+}
+
+// IsWhitelistMode 检查是否启用白名单模式
+func (f FilterStrategy) IsWhitelistMode() bool {
+	if f.WhitelistMode != nil {
+		return *f.WhitelistMode
+	}
+	return false
+}
+
+// IsScriptFilterEnabled 检查是否启用脚本规则过滤
+func (f FilterStrategy) IsScriptFilterEnabled() bool {
+	if f.ScriptFilterEnabled != nil {
+		return *f.ScriptFilterEnabled
 	}
 	return false
 }

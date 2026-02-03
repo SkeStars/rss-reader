@@ -2021,7 +2021,7 @@
               <div class="tip">启用后新上榜的条目总是排在最前面</div>
             </el-form-item>
 
-            <el-divider content-position="left">关键词过滤</el-divider>
+            <el-divider content-position="left">规则过滤</el-divider>
 
             <el-form-item label="启用关键词过滤">
               <el-switch v-model="tempKeywordFilterEnabled"></el-switch>
@@ -2029,24 +2029,68 @@
             </el-form-item>
 
             <template v-if="tempKeywordFilterEnabled">
-              <el-form-item label="过滤关键词">
+              <el-form-item label="白名单模式">
+                <el-switch v-model="tempFilterSettings.whitelistMode"></el-switch>
+                <div class="tip">启用后仅保留包含保留关键词的文章，其他全部过滤</div>
+              </el-form-item>
+
+              <el-form-item v-if="!tempFilterSettings.whitelistMode" label="过滤关键词">
                 <el-select v-model="tempFilterSettings.filterKeywords" multiple filterable allow-create
                   default-first-option placeholder="输入关键词并回车">
                 </el-select>
-                <div class="tip">包含这些词的文章将被过滤</div>
+                <div class="tip">包含这些词的文章将被过滤（黑名单）</div>
               </el-form-item>
 
               <el-form-item label="保留关键词">
                 <el-select v-model="tempFilterSettings.keepKeywords" multiple filterable allow-create default-first-option
                   placeholder="输入关键词并回车">
                 </el-select>
-                <div class="tip">包含这些词的文章将被保留(优先级最高)</div>
+                <div class="tip" v-if="tempFilterSettings.whitelistMode">白名单模式：仅包含这些词的文章会被保留</div>
+                <div class="tip" v-else>包含这些词的文章将被保留(优先级最高)</div>
               </el-form-item>
 
               <el-form-item>
                 <el-button type="warning" size="small" :loading="clearingCache === 'keyword'"
                   @click="clearCacheAndRefresh('filter')">
                   <svg v-if="clearingCache !== 'keyword'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg>
+                  重新过滤
+                </el-button>
+              </el-form-item>
+            </template>
+
+            <el-form-item label="启用脚本过滤">
+              <el-switch v-model="tempScriptFilterEnabled"></el-switch>
+              <div class="tip">使用脚本规则进行高级过滤（如去重）</div>
+            </el-form-item>
+
+            <template v-if="tempScriptFilterEnabled">
+              <el-form-item label="脚本规则">
+                <el-input type="textarea" :rows="6" v-model="tempFilterSettings.scriptFilterContent"
+                  placeholder="#!/bin/bash&#10;# 从stdin读取所有条目的JSON数组，输出过滤后的JSON数组&#10;input=$(cat)&#10;# 使用jq处理，示例：保留发布时间一致的第一条&#10;echo &quot;$input&quot; | jq '[group_by(.pubDate) | .[] | .[0]]'"></el-input>
+                <div class="tip">Bash脚本，通过stdin接收JSON数组，输出过滤后的JSON数组。<el-link type="primary" @click="showScriptHelp = !showScriptHelp" style="margin-left: 5px;">{{ showScriptHelp ? '收起' : '查看' }}示例</el-link></div>
+                <el-collapse-transition>
+                  <div v-show="showScriptHelp" style="margin-top: 10px; padding: 10px; background: #f5f7fa; border-radius: 4px; font-size: 12px;">
+                    <div><strong>条目结构:</strong> <code style="font-size: 11px;">{"title":"标题","link":"链接","pubDate":"时间","source":"来源","description":"描述"}</code></div>
+                    <div style="margin-top: 8px;"><strong>常用示例：</strong></div>
+                    <div style="line-height: 1.8;">
+                      • 保留发布时间相同的第一条: <code style="font-size: 11px;">jq '[group_by(.pubDate) | .[] | .[0]]'</code><br>
+                      • 保留标题相同的第一条: <code style="font-size: 11px;">jq '[group_by(.title) | .[] | .[0]]'</code><br>
+                      • 限制前20条: <code style="font-size: 11px;">jq '.[:20]'</code><br>
+                      • 过滤包含关键词: <code style="font-size: 11px;">jq '[.[] | select(.title | contains("关键词"))]'</code><br>
+                      • 组合使用: <code style="font-size: 11px;">jq '[group_by(.pubDate) | .[] | .[0]] | .[:20]'</code>
+                    </div>
+                  </div>
+                </el-collapse-transition>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="warning" size="small" :loading="clearingCache === 'script'"
+                  @click="clearCacheAndRefresh('filter')">
+                  <svg v-if="clearingCache !== 'script'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                     fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
                     <path
                       d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
@@ -2287,11 +2331,15 @@
           currentEditingFeed: null,
           tempKeywordFilterEnabled: false, // 关键词过滤开关
           tempAIFilterEnabled: false, // AI过滤开关
+          tempScriptFilterEnabled: false, // 脚本规则过滤开关
+          showScriptHelp: false, // 脚本帮助显示开关
           tempFilterSettings: {
             threshold: 0,
             customPrompt: '',
             filterKeywords: [],
-            keepKeywords: []
+            keepKeywords: [],
+            whitelistMode: false,
+            scriptFilterContent: ''
           },
           // 后处理临时设置
           tempPostProcessEnabled: false,
@@ -2766,21 +2814,27 @@
           if (!row.filter) {
             this.tempKeywordFilterEnabled = false;
             this.tempAIFilterEnabled = false;
+            this.tempScriptFilterEnabled = false;
             this.tempFilterSettings = {
               threshold: 0,
               customPrompt: '',
               filterKeywords: [],
-              keepKeywords: []
+              keepKeywords: [],
+              whitelistMode: false,
+              scriptFilterContent: ''
             };
           } else {
             this.tempKeywordFilterEnabled = row.filter.keywordEnabled || false;
             this.tempAIFilterEnabled = row.filter.aiEnabled || false;
+            this.tempScriptFilterEnabled = row.filter.scriptFilterEnabled || false;
 
             this.tempFilterSettings = {
               threshold: row.filter.threshold || 0,
               customPrompt: row.filter.customPrompt || '',
               filterKeywords: row.filter.filterKeywords ? [...row.filter.filterKeywords] : [],
-              keepKeywords: row.filter.keepKeywords ? [...row.filter.keepKeywords] : []
+              keepKeywords: row.filter.keepKeywords ? [...row.filter.keepKeywords] : [],
+              whitelistMode: row.filter.whitelistMode || false,
+              scriptFilterContent: row.filter.scriptFilterContent || ''
             };
           }
 
@@ -2844,6 +2898,13 @@
             filter.aiEnabled = undefined;
           }
 
+          // 脚本规则过滤开关
+          if (this.tempScriptFilterEnabled) {
+            filter.scriptFilterEnabled = true;
+          } else {
+            filter.scriptFilterEnabled = undefined;
+          }
+
           // 关键词过滤相关设置
           if (this.tempKeywordFilterEnabled) {
             if (this.tempFilterSettings.filterKeywords.length > 0) filter.filterKeywords = this.tempFilterSettings.filterKeywords;
@@ -2851,9 +2912,14 @@
 
             if (this.tempFilterSettings.keepKeywords.length > 0) filter.keepKeywords = this.tempFilterSettings.keepKeywords;
             else filter.keepKeywords = undefined;
+
+            // 白名单模式
+            if (this.tempFilterSettings.whitelistMode) filter.whitelistMode = true;
+            else filter.whitelistMode = undefined;
           } else {
             filter.filterKeywords = undefined;
             filter.keepKeywords = undefined;
+            filter.whitelistMode = undefined;
           }
 
           // AI过滤相关设置
@@ -2866,6 +2932,14 @@
           } else {
             filter.threshold = undefined;
             filter.customPrompt = undefined;
+          }
+
+          // 脚本规则过滤相关设置
+          if (this.tempScriptFilterEnabled) {
+            if (this.tempFilterSettings.scriptFilterContent) filter.scriptFilterContent = this.tempFilterSettings.scriptFilterContent;
+            else filter.scriptFilterContent = undefined;
+          } else {
+            filter.scriptFilterContent = undefined;
           }
 
           // Check if filter object is empty (all undefined)
