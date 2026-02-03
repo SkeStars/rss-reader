@@ -154,7 +154,6 @@
 
         .item-content .source-tag {
           display: inline;
-          white-space: nowrap;
         }
 
         a {
@@ -221,7 +220,24 @@
           display: inline;
           vertical-align: middle;
           margin-left: 0.6em;
-          margin-top: 2px;
+          position: relative;
+          top: -0.1px;
+        }
+
+        .pubdate-tag {
+          font-size: 10px;
+          color: #909399;
+          display: inline;
+          vertical-align: middle;
+          margin-left: 0.6em;
+          position: relative;
+          top: -0.1px;
+        }
+
+        /* Multiline optimization */
+        .is-multiline .source-tag,
+        .is-multiline .pubdate-tag {
+          top: -0.4px;
         }
 
         .footer-countdown {
@@ -1974,143 +1990,147 @@
             <el-input v-model="currentEditingFeed.icon" placeholder="https://..."></el-input>
           </el-form-item>
 
-          <el-divider content-position="left">条目限制</el-divider>
-
-          <el-form-item label="最大读取条数">
-            <el-input-number v-model="currentEditingFeed.maxItems" :min="0" :max="500"
-              placeholder="0"></el-input-number>
-            <div class="tip">限制从RSS源读取的最大条目数 (0表示不限制)</div>
+          <el-form-item label="显示发布时间">
+            <el-switch v-model="currentEditingFeed.showPubDate"></el-switch>
+            <div class="tip">在条目标题后显示发布时间（如"1小时前"）</div>
           </el-form-item>
 
-          <el-form-item label="刷新倍数">
-            <el-input-number v-model="currentEditingFeed.refreshCount" :min="0" :max="100"
-              placeholder="0"></el-input-number>
-            <div class="tip">时段规则生效时的间隔倍数 (0为默认)，最终间隔 = 基准频率 × 此倍数</div>
-          </el-form-item>
+          <template v-if="currentEditingFeed.url">
+            <el-divider content-position="left">条目限制</el-divider>
 
-          <el-form-item label="缓存条数">
-            <el-input-number v-model="currentEditingFeed.cacheItems" :min="0" :max="500"
-              placeholder="0"></el-input-number>
-            <div class="tip">保留旧条目使总数达到此值 (0表示不缓存)</div>
-          </el-form-item>
-
-          <el-form-item label="榜单模式">
-            <el-switch v-model="currentEditingFeed.rankingMode"></el-switch>
-            <div class="tip">启用后新上榜的条目总是排在最前面</div>
-          </el-form-item>
-
-          <el-divider content-position="left">关键词过滤</el-divider>
-
-          <el-form-item label="启用关键词过滤">
-            <el-switch v-model="tempKeywordFilterEnabled"></el-switch>
-            <div class="tip">基于关键词进行文章过滤</div>
-          </el-form-item>
-
-          <template v-if="tempKeywordFilterEnabled">
-            <el-form-item label="过滤关键词">
-              <el-select v-model="tempFilterSettings.filterKeywords" multiple filterable allow-create
-                default-first-option placeholder="输入关键词并回车">
-              </el-select>
-              <div class="tip">包含这些词的文章将被过滤</div>
+            <el-form-item label="最大读取条数">
+              <el-input-number v-model="currentEditingFeed.maxItems" :min="0" :max="500"
+                placeholder="0"></el-input-number>
+              <div class="tip">限制从RSS源读取的最大条目数 (0表示不限制)</div>
             </el-form-item>
 
-            <el-form-item label="保留关键词">
-              <el-select v-model="tempFilterSettings.keepKeywords" multiple filterable allow-create default-first-option
-                placeholder="输入关键词并回车">
-              </el-select>
-              <div class="tip">包含这些词的文章将被保留(优先级最高)</div>
+            <el-form-item label="刷新倍数">
+              <el-input-number v-model="currentEditingFeed.refreshCount" :min="0" :max="100"
+                placeholder="0"></el-input-number>
+              <div class="tip">时段规则生效时的间隔倍数 (0为默认)，最终间隔 = 基准频率 × 此倍数</div>
             </el-form-item>
 
-            <el-form-item>
-              <el-button type="warning" size="small" :loading="clearingCache === 'keyword'"
-                @click="clearCacheAndRefresh('filter')">
-                <svg v-if="clearingCache !== 'keyword'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
-                  <path
-                    d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                </svg>
-                重新过滤
-              </el-button>
-              <div class="tip">清除关键词过滤缓存并重新处理</div>
-            </el-form-item>
-          </template>
-
-          <el-divider content-position="left">AI 过滤</el-divider>
-
-          <el-form-item label="启用AI过滤">
-            <el-switch v-model="tempAIFilterEnabled"></el-switch>
-            <div class="tip">需要先在基础设置中启用全局AI过滤并配置API</div>
-          </el-form-item>
-
-          <template v-if="tempAIFilterEnabled">
-            <el-form-item label="自定义阈值">
-              <el-slider v-model="tempFilterSettings.threshold" :min="0" :max="1" :step="0.05" show-input></el-slider>
-              <div class="tip">置信度高于此值将被过滤 (0表示跟随全局)</div>
+            <el-form-item label="缓存条数">
+              <el-input-number v-model="currentEditingFeed.cacheItems" :min="0" :max="500"
+                placeholder="0"></el-input-number>
+              <div class="tip">保留旧条目使总数达到此值 (0表示不缓存)</div>
             </el-form-item>
 
-            <el-form-item label="自定义提示词">
-              <el-input type="textarea" :rows="3" v-model="tempFilterSettings.customPrompt"
-                placeholder="留空则使用全局提示词"></el-input>
+            <el-form-item label="榜单模式">
+              <el-switch v-model="currentEditingFeed.rankingMode"></el-switch>
+              <div class="tip">启用后新上榜的条目总是排在最前面</div>
             </el-form-item>
 
-            <el-form-item>
-              <el-button type="warning" size="small" :loading="clearingCache === 'ai'"
-                @click="clearCacheAndRefresh('filter')">
-                <svg v-if="clearingCache !== 'ai'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
-                  <path
-                    d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                </svg>
-                重新过滤
-              </el-button>
-              <div class="tip">清除AI过滤缓存并重新处理</div>
-            </el-form-item>
-          </template>
+            <el-divider content-position="left">关键词过滤</el-divider>
 
-          <el-divider content-position="left">后处理</el-divider>
-
-          <el-form-item label="启用后处理">
-            <el-switch v-model="tempPostProcessEnabled"></el-switch>
-            <div class="tip">在AI过滤后对条目进行二次处理</div>
-          </el-form-item>
-
-          <template v-if="tempPostProcessEnabled">
-            <el-form-item label="处理模式">
-              <el-radio-group v-model="tempPostProcessSettings.mode">
-                <el-radio label="ai">AI处理</el-radio>
-                <el-radio label="script">脚本处理</el-radio>
-              </el-radio-group>
+            <el-form-item label="启用关键词过滤">
+              <el-switch v-model="tempKeywordFilterEnabled"></el-switch>
+              <div class="tip">基于关键词进行文章过滤</div>
             </el-form-item>
 
-            <el-form-item v-if="tempPostProcessSettings.mode === 'ai'" label="处理提示词">
-              <el-input type="textarea" :rows="3" v-model="tempPostProcessSettings.prompt"
-                placeholder="请对以下RSS条目进行处理，返回JSON格式..."></el-input>
+            <template v-if="tempKeywordFilterEnabled">
+              <el-form-item label="过滤关键词">
+                <el-select v-model="tempFilterSettings.filterKeywords" multiple filterable allow-create
+                  default-first-option placeholder="输入关键词并回车">
+                </el-select>
+                <div class="tip">包含这些词的文章将被过滤</div>
+              </el-form-item>
+
+              <el-form-item label="保留关键词">
+                <el-select v-model="tempFilterSettings.keepKeywords" multiple filterable allow-create default-first-option
+                  placeholder="输入关键词并回车">
+                </el-select>
+                <div class="tip">包含这些词的文章将被保留(优先级最高)</div>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="warning" size="small" :loading="clearingCache === 'keyword'"
+                  @click="clearCacheAndRefresh('filter')">
+                  <svg v-if="clearingCache !== 'keyword'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg>
+                  重新过滤
+                </el-button>
+              </el-form-item>
+            </template>
+
+            <el-divider content-position="left">AI 过滤</el-divider>
+
+            <el-form-item label="启用AI过滤">
+              <el-switch v-model="tempAIFilterEnabled"></el-switch>
+              <div class="tip">需要先在基础设置中启用全局AI过滤并配置API</div>
             </el-form-item>
 
-            <el-form-item v-if="tempPostProcessSettings.mode === 'script'" label="脚本内容">
-              <el-input type="textarea" :rows="6" v-model="tempPostProcessSettings.scriptContent"
-                placeholder="#!/bin/bash&#10;# 读取JSON输入&#10;input=$(cat)&#10;title=$(echo $input | jq -r '.title')&#10;# 输出JSON结果&#10;echo '{&quot;title&quot;: &quot;'$title'&quot;}'"></el-input>
-              <div class="tip">Bash脚本，通过stdin接收JSON，输出JSON结果。需要jq工具。</div>
+            <template v-if="tempAIFilterEnabled">
+              <el-form-item label="自定义阈值">
+                <el-slider v-model="tempFilterSettings.threshold" :min="0" :max="1" :step="0.05" show-input></el-slider>
+                <div class="tip">置信度高于此值将被过滤 (0表示跟随全局)</div>
+              </el-form-item>
+
+              <el-form-item label="自定义提示词">
+                <el-input type="textarea" :rows="3" v-model="tempFilterSettings.customPrompt"
+                  placeholder="留空则使用全局提示词"></el-input>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="warning" size="small" :loading="clearingCache === 'ai'"
+                  @click="clearCacheAndRefresh('filter')">
+                  <svg v-if="clearingCache !== 'ai'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg>
+                  重新过滤
+                </button>
+              </el-form-item>
+            </template>
+
+            <el-divider content-position="left">后处理</el-divider>
+
+            <el-form-item label="启用后处理">
+              <el-switch v-model="tempPostProcessEnabled"></el-switch>
+              <div class="tip">在AI过滤后对条目进行二次处理</div>
             </el-form-item>
 
-            <el-form-item label="修改字段">
-              <el-checkbox v-model="tempPostProcessSettings.modifyTitle">标题</el-checkbox>
-              <el-checkbox v-model="tempPostProcessSettings.modifyLink">链接</el-checkbox>
-              <el-checkbox v-model="tempPostProcessSettings.modifyPubDate">发布时间</el-checkbox>
-            </el-form-item>
+            <template v-if="tempPostProcessEnabled">
+              <el-form-item label="处理模式">
+                <el-radio-group v-model="tempPostProcessSettings.mode">
+                  <el-radio label="ai">AI处理</el-radio>
+                  <el-radio label="script">脚本处理</el-radio>
+                </el-radio-group>
+              </el-form-item>
 
-            <el-form-item>
-              <el-button type="warning" size="small" :loading="clearingCache === 'postprocess'"
-                @click="clearCacheAndRefresh('postprocess')">
-                <svg v-if="clearingCache !== 'postprocess'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
-                  <path
-                    d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                </svg>
-                重新处理
-              </el-button>
-              <div class="tip">清除后处理缓存并重新处理</div>
-            </el-form-item>
+              <el-form-item v-if="tempPostProcessSettings.mode === 'ai'" label="处理提示词">
+                <el-input type="textarea" :rows="3" v-model="tempPostProcessSettings.prompt"
+                  placeholder="请对以下RSS条目进行处理，返回JSON格式..."></el-input>
+              </el-form-item>
+
+              <el-form-item v-if="tempPostProcessSettings.mode === 'script'" label="脚本内容">
+                <el-input type="textarea" :rows="6" v-model="tempPostProcessSettings.scriptContent"
+                  placeholder="#!/bin/bash&#10;# 读取JSON输入&#10;input=$(cat)&#10;title=$(echo $input | jq -r '.title')&#10;# 输出JSON结果&#10;echo '{&quot;title&quot;: &quot;'$title'&quot;}'"></el-input>
+                <div class="tip">Bash脚本，通过stdin接收JSON，输出JSON结果。需要jq工具。</div>
+              </el-form-item>
+
+              <el-form-item label="修改字段">
+                <el-checkbox v-model="tempPostProcessSettings.modifyTitle">标题</el-checkbox>
+                <el-checkbox v-model="tempPostProcessSettings.modifyLink">链接</el-checkbox>
+                <el-checkbox v-model="tempPostProcessSettings.modifyPubDate">发布时间</el-checkbox>
+              </el-form-item>
+
+              <el-form-item>
+                <el-button type="warning" size="small" :loading="clearingCache === 'postprocess'"
+                  @click="clearCacheAndRefresh('postprocess')">
+                  <svg v-if="clearingCache !== 'postprocess'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor" style="width: 14px; height: 14px; margin-right: 4px; vertical-align: middle;">
+                    <path
+                      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                  </svg>
+                  重新处理
+                </button>
+              </el-form-item>
+            </template>
           </template>
         </el-form>
       </div>
@@ -2165,10 +2185,19 @@
                           <span class="item-content"><el-link href="<< $item.Link >>" target="_blank">
                               << $item.Title>>
                             </el-link>
-                            <<if and $feed.IsFolder $item.Source (ne $item.Source "" )>> <span class="source-tag">
-                                << $item.Source>>
-                              </span>
+                            <<if $feed.ShowPubDate>>
+                              <<if and $feed.IsFolder $item.Source (ne $item.Source "" )>>
+                                <span class="pubdate-tag" data-pubdate="<< $item.PubDate >>"></span>
+                                <span class="source-tag"><< $item.Source>></span>
+                              <<else>>
+                                <span class="pubdate-tag" data-pubdate="<< $item.PubDate >>"></span>
                               <<end>>
+                            <<else>>
+                              <<if and $feed.IsFolder $item.Source (ne $item.Source "" )>> <span class="source-tag">
+                                  << $item.Source>>
+                                </span>
+                              <<end>>
+                            <<end>>
                           </span>
                         </div>
                       </el-list-item>
@@ -2184,8 +2213,8 @@
                   :header-style="{padding: '24px 20px 16px 20px'}">
                   <div slot="header" class="card-header">
                     <div class="card-header-left">
-                      <img class="card-header-icon" :src="feed.icon || 'static/favicon.svg'" :alt="feed.title" />
-                      <span class="card-header-title" @click="openFeedLink(feed.link)">{{ feed.title }}</span>
+                      <img class="card-header-icon" :src="feed.icon || 'static/favicon.svg'" :alt="feed.title" @click="openFeedLink(feed.link)" style="cursor: pointer;" />
+                      <span class="card-header-title" @click="togglePubDate(feed)">{{ feed.title }}</span>
                     </div>
                     <div class="card-header-right">
                       <time class="time" @click.stop="refreshFeed(feed)">{{ timeAgo(feed.custom.lastupdate) }}</time>
@@ -2202,9 +2231,9 @@
                           <span class="item-content">
                             <el-link :href="item.link" target="_blank" @click.stop="markAsRead(item.link, false)">{{
                               item.title
-                              }}</el-link><span v-if="feed.isFolder && item.source && item.source !== ''"
+                              }}</el-link><template v-if="feed.showPubDate"><template v-if="feed.isFolder && item.source && item.source !== ''"><span class="pubdate-tag">{{ pubDateTimeAgo(item.pubDate) }}</span><span class="source-tag">{{ item.source }}</span></template><template v-else><span class="pubdate-tag">{{ pubDateTimeAgo(item.pubDate) }}</span></template></template><template v-else><span v-if="feed.isFolder && item.source && item.source !== ''"
                               class="source-tag"> {{ item.source
-                              }}</span>
+                              }}</span></template>
                           </span>
                         </div>
                       </el-list-item>
@@ -2318,6 +2347,9 @@
         },
       },
       methods: {
+        togglePubDate(feed) {
+          feed.showPubDate = !feed.showPubDate;
+        },
         selectGroup(group) {
           this.currentGroup = group;
           this.$nextTick(() => {
@@ -2344,6 +2376,19 @@
           if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
           if (diff < 2592000) return Math.floor(diff / 86400) + ' 天前';
           return dateStr;
+        },
+        pubDateTimeAgo(dateStr) {
+          if (!dateStr) return '';
+
+          const date = new Date(dateStr.replace(/-/g, '/'));
+          const now = new Date();
+          const diff = Math.floor((now - date) / 1000);
+
+          if (diff < 60) return '刚刚';
+          if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+          if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+          if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+          return '';
         },
         updateCountdown() {
           if (this.countdown < 0) return;
@@ -2715,6 +2760,7 @@
           if (row.maxItems === undefined) row.maxItems = 0;
           if (row.cacheItems === undefined) row.cacheItems = 0;
           if (row.refreshCount === undefined) row.refreshCount = 0;
+          if (row.showPubDate === undefined) row.showPubDate = false;
 
           // Init temp vars from row
           if (!row.filter) {
@@ -2775,6 +2821,10 @@
           }
           if (this.currentEditingFeed.refreshCount === 0 || this.currentEditingFeed.refreshCount === null) {
             this.currentEditingFeed.refreshCount = undefined;
+          }
+          // Handle showPubDate
+          if (!this.currentEditingFeed.showPubDate) {
+            this.currentEditingFeed.showPubDate = undefined;
           }
 
           // Construct filter object
@@ -3042,6 +3092,23 @@
             }
           }
         },
+        detectMultiline() {
+          const items = document.querySelectorAll('.item-content');
+          items.forEach(item => {
+            // Check if height exceeds single line height (approx 25px - 30px)
+            // Using 40px as a safe threshold
+            if (item.offsetHeight > 40) {
+              item.classList.add('is-multiline');
+            } else {
+              item.classList.remove('is-multiline');
+            }
+          });
+        },
+      },
+      updated() {
+        this.$nextTick(() => {
+          this.detectMultiline();
+        });
       },
       async created() {
         this.fullscreenLoading = false;
@@ -3169,9 +3236,28 @@
       return dateStr;
     }
 
+    // 发布时间转换为相对时间（用于条目发布时间显示）
+    function pubDateTimeAgo(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr.replace(/-/g, '/'));
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+
+      if (diff < 60) return '刚刚';
+      if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+      if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+      if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+      return '';
+    }
+
     // 更新页面上的时间显示
     document.querySelectorAll('time[data-time]').forEach(el => {
       el.textContent = timeAgo(el.getAttribute('data-time'));
+    });
+
+    // 更新页面上的发布时间显示
+    document.querySelectorAll('.pubdate-tag[data-pubdate]').forEach(el => {
+      el.textContent = pubDateTimeAgo(el.getAttribute('data-pubdate'));
     });
 
     // 处理服务端渲染条目的已读状态

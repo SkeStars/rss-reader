@@ -209,6 +209,8 @@ type FeedSource struct {
 	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
 	// 自定义刷新次数，与时段规则中的基准频率相乘
 	RefreshCount int `json:"refreshCount,omitempty"`
+	// 是否在条目后显示发布时间（如"1小时前"）
+	ShowPubDate bool `json:"showPubDate,omitempty"`
 }
 
 // FeedURL 表示文件夹内的单个RSS源
@@ -228,6 +230,8 @@ type FeedURL struct {
 	PostProcess *PostProcessConfig `json:"postProcess,omitempty"`
 	// 自定义刷新次数，与时段规则中的基准频率相乘
 	RefreshCount int `json:"refreshCount,omitempty"`
+	// 是否在条目后显示发布时间（如"1小时前"）
+	ShowPubDate bool `json:"showPubDate,omitempty"`
 }
 
 // IsFolder 判断是否为文件夹类型

@@ -107,19 +107,35 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 					}
 					result.fromCache = true
 				} else {
-					// 没有缓存，执行后处理
+					// 没有缓存，执行后处理（带重试机制）
+					const maxRetries = 3
+					const retryDelay = 3 * time.Second
+					
 					var processedItem models.Item
-					var err error
+					var lastErr error
 
-					if config.GetMode() == "script" {
-						processedItem, err = processItemWithScript(job.item, config)
-					} else {
-						processedItem, err = processItemWithAI(job.item, config)
+					for attempt := 1; attempt <= maxRetries; attempt++ {
+						if config.GetMode() == "script" {
+							processedItem, lastErr = processItemWithScript(job.item, config)
+						} else {
+							processedItem, lastErr = processItemWithAI(job.item, config)
+						}
+						
+						if lastErr == nil {
+							break
+						}
+						
+						if attempt < maxRetries {
+							log.Printf("[后处理重试] 条目 [%s]: 第 %d 次尝试失败: %v，%d秒后重试...", 
+								job.item.Title, attempt, lastErr, int(retryDelay.Seconds()))
+							time.Sleep(retryDelay)
+						}
 					}
 
-					if err != nil {
-						result.err = err
-						log.Printf("[后处理失败] 条目 [%s]: %v", job.item.Title, err)
+					if lastErr != nil {
+						result.err = lastErr
+						log.Printf("[后处理失败] 条目 [%s]: 已重试 %d 次，最终失败: %v", job.item.Title, maxRetries, lastErr)
+						// 失败后不存入缓存，下次源更新时将重新处理
 					} else {
 						// 如果后处理会修改 Link，先保存原始链接
 						if config.ModifyLink && processedItem.Link != job.item.Link {
@@ -142,7 +158,7 @@ func PostProcessItems(items []models.Item, rssURL string) []models.Item {
 							log.Printf("[后处理成功] 条目 [%s] | %s", truncateString(job.item.Title, 30), strings.Join(changes, ", "))
 						}
 
-						// 存入缓存（使用原始链接作为 key）
+						// 成功后存入缓存（使用原始链接作为 key）
 						entry := models.PostProcessCacheEntry{
 							ProcessedAt: time.Now().Format("2006-01-02 15:04:05"),
 						}

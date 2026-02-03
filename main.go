@@ -177,18 +177,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		//这里原本是自动推送逻辑，现在删除，改为只发送一次或者保持连接等待（如果需要的话）
-		//但是根据代码逻辑，for loop一直在跑。
-		//如果删除了AutoUpdatePush，我们应该怎么处理？
-		//观察原代码: sleep AutoUpdatePush minutes.
-		//如果删除了，这个loop就没有sleep了? 会死循环发送。
-		//所以应该把这个自动推送的loop逻辑改掉。
-		//也许只需要发送一次然后hold住连接? 或者等待别的信号?
-		//原逻辑是定时推送。
-		//现在的需求是页面自己倒计时刷新。
-		//所以WebSocket可能只需要保持连接或者作为被动通知通道(尽管目前没有实现被动通知)。
-		//我们可以让它Sleep一个很长的时间，或者改为接收模式。
-		//为了保持最小改动且符合"删除AutoUpdatePush功能"的需求，我们可以让它只发一次然后挂起等待客户端断开。
 		select {} 
 	}
 }

@@ -12,6 +12,7 @@ type Feed struct {
 	AllItemLinks  []string `json:"-"`                      // 过滤前的所有文章链接（不输出到JSON，用于内容变动检测和内部清理）
 	AllItemTitles []string `json:"-"`                      // 过滤前的所有文章标题（不输出到JSON，用于内容变动检测）
 	Group         string   `json:"group,omitempty"`        // 分组名称
+	ShowPubDate   bool     `json:"showPubDate,omitempty"`  // 是否在条目后显示发布时间
 }
 
 type Item struct {

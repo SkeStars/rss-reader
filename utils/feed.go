@@ -96,8 +96,29 @@ func processFeedUpdate(urlBack string, sourceRefreshCount int, formattedTime str
 	intervalDuration := time.Duration(interval) * time.Minute
 
 	if !ok || now.Sub(lastUpdate) >= intervalDuration {
-		// 执行更新
-		go UpdateFeed(urlBack, formattedTime, false)
+		// 执行更新（带重试机制）
+		go func(url, formattedTime string) {
+			const maxRetries = 3
+			const retryDelay = 1 * time.Second
+			
+			var lastErr error
+			for attempt := 1; attempt <= maxRetries; attempt++ {
+				lastErr = UpdateFeed(url, formattedTime, false)
+				if lastErr == nil {
+					break
+				}
+				
+				if attempt < maxRetries {
+					log.Printf("[源更新重试] URL [%s]: 第 %d 次尝试失败: %v，%d秒后重试...", 
+						url, attempt, lastErr, int(retryDelay.Seconds()))
+					time.Sleep(retryDelay)
+				}
+			}
+			
+			if lastErr != nil {
+				log.Printf("[源更新失败] URL [%s]: 已重试 %d 次，最终失败: %v", url, maxRetries, lastErr)
+			}
+		}(urlBack, formattedTime)
 
 		lutLock.Lock()
 		lastUpdateTimes[urlBack] = now
@@ -266,6 +287,31 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 	// 获取图标：优先级 1.配置的自定义图标 2.RSS feed的image 3.自动生成favicon
 	icon := GetIconForFeed(url, result)
 	
+	// 构建缓存条目的时间戳映射（用于恢复没有发布时间的条目）
+	cachedPubDates := make(map[string]string)
+	if !isRanking {
+		// 优先从内存缓存获取
+		globals.Lock.RLock()
+		if cache, ok := globals.DbMap[url]; ok {
+			for _, item := range cache.Items {
+				if item.PubDate != "" {
+					cachedPubDates[item.Link] = item.PubDate
+				}
+			}
+		}
+		globals.Lock.RUnlock()
+		// 补充从持久化缓存获取
+		if cachedItems, ok := GetItemsCache(url); ok {
+			for _, item := range cachedItems {
+				if item.PubDate != "" {
+					if _, exists := cachedPubDates[item.Link]; !exists {
+						cachedPubDates[item.Link] = item.PubDate
+					}
+				}
+			}
+		}
+	}
+	
 	// 先构建所有Items
 	allItems := make([]models.Item, 0, len(result.Items))
 	for _, v := range result.Items {
@@ -277,9 +323,13 @@ func UpdateFeedWithOptions(url, formattedTime string, isManual bool, forceReproc
 			} else if v.UpdatedParsed != nil {
 				pubDate = v.UpdatedParsed.Format("2006-01-02 15:04:05")
 			} else {
-				// 如果RSS条目没有时间戳，使用当前抓取时间作为备用
-				// 这样可以确保所有条目都有时间戳，避免排序问题
-				pubDate = formattedTime
+				// 如果RSS条目没有时间戳，优先从缓存恢复（保持首次出现的时间）
+				// 如果缓存中也没有，使用当前抓取时间作为首次出现时间
+				if cached, ok := cachedPubDates[v.Link]; ok {
+					pubDate = cached
+				} else {
+					pubDate = formattedTime
+				}
 			}
 		}
 		// 榜单模式下 pubDate 为空，将由 processRankingItems 统一分配时间戳
@@ -741,6 +791,8 @@ func GetFeeds() []models.Feed {
 				cache.Icon = source.Icon
 			}
 			cache.Group = group
+			// 设置是否显示发布时间
+			cache.ShowPubDate = source.ShowPubDate
 			feeds = append(feeds, cache)
 		}
 	}
@@ -755,12 +807,13 @@ func buildFolderFeed(source models.FeedSource) *models.Feed {
 	}
 
 	folderFeed := &models.Feed{
-		Title:    source.Name,
-		Link:     "folder:" + source.Name,
-		Icon:     source.Icon, // 文件夹的自定义图标
-		IsFolder: true,
-		Custom:   map[string]string{"lastupdate": "加载失败，请稍后重试"},
-		Items:    make([]models.Item, 0),
+		Title:       source.Name,
+		Link:        "folder:" + source.Name,
+		Icon:        source.Icon, // 文件夹的自定义图标
+		IsFolder:    true,
+		Custom:      map[string]string{"lastupdate": "加载失败，请稍后重试"},
+		Items:       make([]models.Item, 0),
+		ShowPubDate: source.ShowPubDate, // 是否显示发布时间
 	}
 
 	// 收集所有源的items
@@ -1003,9 +1056,27 @@ func RefreshSingleFeed(link string) error {
 					wg.Add(1)
 					go func(url string) {
 						defer wg.Done()
-						if err := UpdateFeed(url, formattedTime, true); err != nil {
-							// UpdateFeed 内部已有详细日志
-							errChan <- err
+						// 带重试机制的更新
+						const maxRetries = 3
+						const retryDelay = 1 * time.Second
+						
+						var lastErr error
+						for attempt := 1; attempt <= maxRetries; attempt++ {
+							lastErr = UpdateFeed(url, formattedTime, true)
+							if lastErr == nil {
+								break
+							}
+							
+							if attempt < maxRetries {
+								log.Printf("[手动刷新重试] URL [%s]: 第 %d 次尝试失败: %v，%d秒后重试...", 
+									url, attempt, lastErr, int(retryDelay.Seconds()))
+								time.Sleep(retryDelay)
+							}
+						}
+						
+						if lastErr != nil {
+							log.Printf("[手动刷新失败] URL [%s]: 已重试 %d 次，最终失败: %v", url, maxRetries, lastErr)
+							errChan <- lastErr
 						}
 					}(feedUrl.URL)
 				}
@@ -1026,13 +1097,30 @@ func RefreshSingleFeed(link string) error {
 				return nil
 			}
 		} else if source.URL == link {
-			// 单个源直接刷新
+			// 单个源直接刷新（带重试机制）
 			startTime := time.Now()
 			log.Printf("[手动刷新] 确认匹配单个源: %s", link)
-			err := UpdateFeed(source.URL, formattedTime, true)
+			
+			const maxRetries = 3
+			const retryDelay = 1 * time.Second
+			
+			var err error
+			for attempt := 1; attempt <= maxRetries; attempt++ {
+				err = UpdateFeed(source.URL, formattedTime, true)
+				if err == nil {
+					break
+				}
+				
+				if attempt < maxRetries {
+					log.Printf("[手动刷新重试] 源 [%s]: 第 %d 次尝试失败: %v，%d秒后重试...", 
+						link, attempt, err, int(retryDelay.Seconds()))
+					time.Sleep(retryDelay)
+				}
+			}
+			
 			duration := time.Since(startTime)
 			if err != nil {
-				log.Printf("[手动刷新] 单个源 [%s] 刷新失败，耗时 %v: %v", link, duration, err)
+				log.Printf("[手动刷新失败] 单个源 [%s]: 已重试 %d 次，最终失败，耗时 %v: %v", link, maxRetries, duration, err)
 			} else {
 				log.Printf("[手动刷新] 单个源 [%s] 刷新完成，耗时 %v", link, duration)
 			}

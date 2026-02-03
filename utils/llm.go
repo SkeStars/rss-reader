@@ -326,11 +326,30 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 						log.Printf("[过滤命中-来自缓存] 文章 [%s]", job.item.Title)
 					}
 				} else {
-					// 没有缓存，调用过滤逻辑
-					resp, err := client.ClassifyItem(job.item, strategy, keywordOnly)
-					if err != nil {
-						result.err = err
-						log.Printf("[过滤失败] 文章 [%s]: %v", job.item.Title, err)
+					// 没有缓存，调用过滤逻辑（带重试机制）
+					const maxRetries = 3
+					const retryDelay = 3 * time.Second
+					
+					var resp *FilterResponse
+					var lastErr error
+					
+					for attempt := 1; attempt <= maxRetries; attempt++ {
+						resp, lastErr = client.ClassifyItem(job.item, strategy, keywordOnly)
+						if lastErr == nil {
+							break
+						}
+						
+						if attempt < maxRetries {
+							log.Printf("[过滤重试] 文章 [%s]: 第 %d 次尝试失败: %v，%d秒后重试...", 
+								job.item.Title, attempt, lastErr, int(retryDelay.Seconds()))
+							time.Sleep(retryDelay)
+						}
+					}
+					
+					if lastErr != nil {
+						result.err = lastErr
+						log.Printf("[过滤失败] 文章 [%s]: 已重试 %d 次，最终失败: %v", job.item.Title, maxRetries, lastErr)
+						// 失败后不存入缓存，下次源更新时将重新处理
 					} else {
 						result.isFiltered = resp.IsFiltered && resp.Confidence >= threshold
 						result.confidence = resp.Confidence
@@ -343,7 +362,7 @@ func FilterItems(items []models.Item, rssURL string) []models.Item {
 							// log.Printf("[AI过滤通过-新处理] 文章 [%s]: %s (置信度: %.2f)", job.item.Title, resp.Reason, resp.Confidence)
 						}
 
-						// 存入缓存
+						// 成功后存入缓存
 						globals.FilterCacheLock.Lock()
 						globals.FilterCache[job.item.Link] = models.FilterCacheEntry{
 							IsFiltered: result.isFiltered,
