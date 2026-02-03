@@ -74,13 +74,11 @@ func UpdateFeeds() {
 		}
 
 		// 更新全局下次更新时间
-		if !nextGlobalUpdate.IsZero() {
-			globals.Lock.Lock()
-			globals.NextUpdateTime = nextGlobalUpdate
-			globals.Lock.Unlock()
-		}
+		globals.Lock.Lock()
+		globals.NextUpdateTime = nextGlobalUpdate
+		globals.Lock.Unlock()
 
-		time.Sleep(30 * time.Second) // 每30秒检查一次，权衡性能与精度
+		time.Sleep(10 * time.Second) // 缩短检查间隔，提高倒计时准确性
 	}
 }
 

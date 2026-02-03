@@ -3056,8 +3056,13 @@
           if (!isNaN(target.getTime()) && target.getFullYear() > 2000) {
             const now = new Date();
             let diff = Math.floor((target - now) / 1000);
-            if (diff < 0) diff = 0;
-            this.countdown = diff;
+            if (diff < 0) {
+              // 如果下次更新时间在过去，说明服务端还没来得及更新，设定10秒后重试
+              this.countdown = 10;
+              this.nextUpdateTime = '即将刷新...';
+            } else {
+              this.countdown = diff;
+            }
           } else {
             this.countdown = -1;
             this.nextUpdateTime = '暂无自动更新计划';
@@ -3122,13 +3127,20 @@
             } else if (this.countdown === 0) {
               // 倒计时结束
               clearInterval(timer);
-              this.nextUpdateTime = '即将刷新...';
+              this.nextUpdateTime = '刷新网页中...';
               // 5秒后刷新页面
               setTimeout(() => {
                 location.reload();
               }, 5000);
+            } else {
+              // countdown < 0, 不执行倒计时
             }
           }, 1000);
+
+          // 如果初始状态就是0，也要处理
+          if (this.countdown === 0) {
+            this.nextUpdateTime = '即将刷新...';
+          }
         };
         connect();
 
